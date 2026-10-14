@@ -15,9 +15,9 @@ Your **design sketch** must...
 
 * **NOT DEPICT USER REGISTRATION, SIGN IN, NOR SIGNOUT**
 * depict the main "screens" for an unauthenticated user (e.g. landing page, else?)
-  * include possible url for each of these screens
+ * include possible url for each of these screens
 * depict the main "screens" for an authenticated user
-  * include possible url for each of these screens
+ * include possible url for each of these screens
 * depict user interface elements necessary to perform CRUD operations.
 * depict a navigation menu that will be present on all pages.
 
@@ -26,41 +26,41 @@ Your **design sketch** must...
 Your **project narrative** must begin with the project title, your team name, and the student names and include the following sections (about 200 words each):
 
 * Purpose
-  The main idea of our project is to create a bike transit map. This map will encode vetted safe efficient bike routes.  Currently, if you use google maps, apple maps, etc. for bike routes, the most efficient bike route may not be the safest.  This web app will benefit new people local to the community and provide better context for more enjoyable and safe bike trips.  This is important because of common problems with vague maps of the area like: not knowing elevation changes, not knowing dangerous or construction areas, bike lanes vs side walk, etc.
-  
+ The main idea of our project is to create a bike transit map for the city of Harrisonburg, VA. This map will encode vetted safe efficient bike routes. Currently, if you use Google Maps, Apple Maps, or other navigational software for bike routes, the most efficient bike route may not be the safest. Common problems with vague maps of the area include: not knowing elevation changes, not knowing dangerous or construction areas, riding on the side walk instead of bike lanes, etc. This web app will benefit new people local to the community and provide better context for safer and more enjoyable bike trips.
+ 
 * Users
-  * Identify the primary users of your application, including their background or needs.
-  * Justify how your application will benefit these users and improve their experience.
-  The primary user of our adaptation will be locals, visitors, students, and professors who live in the harrisonburg community.  Locals and students both have separate needs for this app.  For example, locals will most likely want to stay within town lines and avoid high traffic areas around campus.  They are likely coming and going from their house or workplace.  Students however, will most likely want to stay near campus and are coming and going from class.  Students will also frequent different places than locals like cheaper grocery stores, off campus book store, etc.  This application will improve these users' experiences because they will be able to easily route their bike path that best aligns with their lifestyle.
+ * Identify the primary users of your application, including their background or needs.
+ * Justify how your application will benefit these users and improve their experience.
+ The primary user of our adaptation will be locals, visitors, students, and professors who live in the Harrisonburg community. Locals and students both have separate needs for this app. For example, locals will most likely want to stay outside campus and avoid high traffic areas around campus, and are likely coming and going from their house or workplace. Students however, will most likely want to stay near campus and are commuting to/from class. Students will also frequent different places than locals like cheaper grocery stores, off campus book store, etc. This application will enable users to easily route their bike path that best aligns with their lifestyle.
 
 * Features
-  * Outline the core functionalities of your application and explain how they will work.
-  * Provide a concrete example demonstrating how the application fulfills its purpose.
+ * Outline the core functionalities of your application and explain how they will work.
+ * Provide a concrete example demonstrating how the application fulfills its purpose.
 
-  - bike parking
-  - authentication system
-  - routes (they put in a location they want to go to)
-  - efficient route vs safest route vs easiest route vs scenic route
-  - filtering between different types of users (student, local, etc.)
-  - Track favorite routes or favorite places
-  - saved locations like home, 
-  - users make route ratings on safety, comfort, intensity, traffic, etc.
-  - at the end of the route, users will information that shows their route, the time it took, mileage, etc.  Users can then export their data.
-  - users can set way-points that users can place as to different locations they wanna avoid, prefer, etc.  Way-points are shared between all users.  Other users can then give the way-points thumbs up or thumbs down to "rate" the different way-points.
-  - import/export you can send different routes to people
-  - their might also be a previous routes section where users can see all the data of their previous routes. 
+ - bike parking
+ - authentication system
+ - routes (they put in a location they want to go to)
+ - efficient route vs safest route vs easiest route vs scenic route
+ - filtering between different types of users (student, local, etc.)
+ - Track favorite routes or favorite places
+ - saved locations like home, 
+ - users make route ratings on safety, comfort, intensity, traffic, etc.
+ - at the end of the route, users will information that shows their route, the time it took, mileage, etc. Users can then export their data.
+ - users can set way-points that users can place as to different locations they wanna avoid, prefer, etc. Way-points are shared between all users. Other users can then give the way-points thumbs up or thumbs down to "rate" the different way-points.
+ - import/export you can send different routes to people
+ - their might also be a previous routes section where users can see all the data of their previous routes. 
 
 * Data
-  * Describe the types of data that users will create, read, update, and delete (CRUD).
-  * Include an example of this data using either real or representative sample values.
-  * Include objects and their properties with some notion of those properties types
-  * Include your intended relationships between your objects.
+ * Describe the types of data that users will create, read, update, and delete (CRUD).
+ * Include an example of this data using either real or representative sample values.
+ * Include objects and their properties with some notion of those properties types
+ * Include your intended relationships between your objects.
 
-  Users will create, read, update and delete their route data, route ratings, saved/pinned locations, favorite locations. An example of this data, is to have users have user id's that correspond to each of their individual data. 
-  
-  Way-points will also have their own data. This will look like the amount of likes and dislikes each way-point has, the lattitude and longitude of the way-point, the comments people have on each way-point.  
-  
-  For example, they can have an array of saved locations
+ Users will create, read, update and delete their route data, route ratings, saved/pinned locations, favorite locations. An example of this data is to have users have user id's that correspond to each of their individual data. 
+ 
+ Way-points will also have their own data. This will look like the amount of likes and dislikes each way-point has, the latitude and longitude of the way-point, the comments people have on each way-point.
+ 
+ For example, they can have an array of saved locations
 
 
 ## Claims
