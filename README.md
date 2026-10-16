@@ -84,3 +84,28 @@ References are optional, but you may include "Works Cited" if that simplifies th
 * However, cycling veterans know where/where not to go, and this app lets them give recommendations
 * Are we building this for Harrisonburg? Also, are you building the map yourself (please don't)
 * Prefer suboptimal routes that build a sense of geography instead?
+
+## Notes from Meeting w/ Bowers:
+* **Original Idea**: Organize bike routes in a town and display it like a London tube/DC metro map
+    * i.e. ride on green route, then turn on read
+    * Needs to be crowdsourced somehow, and someone needs to makedecisions
+    * Data can inform city planners so they can provide infrastructure around popular routes (bike lanes, signage, etc.)
+* Since it looks like DC Metro Map, we need to take Harrisonburg and abstract it
+* Provide alternatives; safer routes vs faster routes and all that
+* **How to crowdsource a path?**
+    * Just try drawing a route? Annotate too (i.e. this section is gravel)
+    * Interview avid cyclists and see what routes they take?
+    * Allow users to plot their own routes/waypoints?
+    * **Considerations when cycling:** Quality of road, mean dog present, traffic density, etc.
+        * Can report hazards when driving?
+        * Dashed lines instead of solid
+* **Reason behind app:** More people will likely ride bikes if they're more aware of safe routes
+    * Cyclist-approved map of where to go
+    * Transit system-style app
+    * If successful or useful, make it in such a way that it can be implemented for multiple cities
+    * Harrisonburg already has a solution. It's too much info. **Beat that.**
+* **Navigation:**
+    * Navigation along the abstracted map. Less "make a left turn in 300 yards," more "intersection for Red Route coming up."
+    * Filter routes by comfort score?
+    * Also include navigation for when you're on the route
+    * Allow folks to report routes if they're dangerous, etc.
