@@ -72,7 +72,9 @@ Our claims will be:
  - I90: Application is mobile-responsive
  - I130: Application has data visualization (idk how smart this is of an idea but I love visualization!)
  - I170: Application has internationalization (considering we go to school in a multicultural city this is a good idea)
- - S80: Notifications (via Push)?????
+ - S80: Notifications (via Push)????? (construction, accident ahead, etc.)
+ - S40 for crowdsourcing and maintenance.
+ - Also a claim: Text-to-speech
 Draft your expectation of which [claims](./claims.md) you will make for your project
 
 References are optional, but you may include "Works Cited" if that simplifies the explanation.
@@ -84,6 +86,15 @@ References are optional, but you may include "Works Cited" if that simplifies th
 * However, cycling veterans know where/where not to go, and this app lets them give recommendations
 * Are we building this for Harrisonburg? Also, are you building the map yourself (please don't)
 * Prefer suboptimal routes that build a sense of geography instead?
+* Crowdsourcing ideas:
+    * Bottleneck it on one person
+        * Permission-based: a conclave of cyclist-routing gurus or something (Stretch Goal S40)
+        * Problem with above is that it's bottleneck and requires vigilance on the stakeholder's part to keep it updated, etc.
+        * Make org via Github?
+* Why are we not just using Google Maps? Is there a way to store info in the database such that we could plug those into Google Maps and have it make the turn-by-turn for us? Could just be as simple as a generated link to Google Maps/Apple Maps/whatever
+    * Is there a way to craft the route such that it's not like a million little destinations?
+    * Hopefully we can make this on the free.
+
 
 ## Notes from Meeting w/ Bowers:
 * **Original Idea**: Organize bike routes in a town and display it like a London tube/DC metro map
