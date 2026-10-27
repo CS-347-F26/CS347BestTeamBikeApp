@@ -26,12 +26,13 @@ The primary users of our application will be locals, visitors, students, and pro
 * Features
 - These bike routes will be differentiated by different colors
 - Ex: ![DC Metro Map](/images/DCMetro.png)
-- Users can select routes and receive directions as they travel. These directions will be less in-depth than something like Google Maps. i e., less "make a left turn in 300 yards," and more "intersection for Red Route coming up."
+- Users can select routes and receive directions as they travel. While riding, the app shows turn-by-turn directions along the vetted routes (e.g. ‘In 300 ft, turn left onto Main St’), plus route-level cues for transfers and arrival.
 - Users will be able to give their opinion on different bike routes.  For example, if a cyclist felt unsafe on the green route, they can add comments or mark said area. All users will be able to see these comments/marks.
 - Examples of things users can mark include high-traffic areas, gravel paths, mean dogs, etc.
 - Version 2 - While users are on their route, the app will speak directions so they know where to go next.  The app will also tell users when they can switch routes mid-ride.
 - Different line types on the bike map can indicate a route's safety. For example, a dashed line might indicate rough terrain.
 - The app can suggest different routes based on the user’s comfort level by using a comfort score.
+- Navigation. Riders choose a start and end station on our network, and the app computes a path over our vetted-route graph using our own implementation of Dijkstra's algorithm. While riding, the app gives turn-by-turn directions along the vetted routes (e.g. "In 300 ft, turn left onto Main St") plus cues for transfers and arrival, based on the rider's GPS position. Turn instructions are generated once with openrouteservice when we build each route and stored in our database, so no outside navigation service is used during rides. Version 2 reads directions aloud using the browser's built-in Web Speech API. We will not give directions to the first station (riders get there on their own, like walking to a subway stop) or reroute riders who leave the network. The route network is curated by our team with Dr. Bowers, using the City of Harrisonburg's Community Bike Map as a starting point.
 
 
 * Data
