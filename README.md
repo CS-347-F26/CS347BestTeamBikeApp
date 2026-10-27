@@ -35,6 +35,7 @@ The primary users of our application will be locals, visitors, students, and pro
 
 
 * Data
+See our data model here: ![Data model](/images/DataModel.jpeg)
 Users will be able to do CRUD operations on any data within the user entity with the exception of ID.  So they can create, read, update and delete their own username, password, previous routes, saved routes, marked locations, and comfortability.  Users will also be able to do CRUD operations on their own comments.
 
 An example of this data using the user entity:
