@@ -49,6 +49,7 @@ An example of this data using the user entity:
 - Comfortability: 2
 - Comments: comment_id: 23, comment_id: 64
 
+We plan to limit out web app to the Harrisonburg metro area to begin, and users should be able to place a route to ride on in this area. If we were to expand our web app's scope, users should be able to place routes wherever they would like.
 
 
 ## Claims
