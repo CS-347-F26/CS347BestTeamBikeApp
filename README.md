@@ -10,8 +10,8 @@ Dr. Bowers
 (Just write your [Plan](https://w3.cs.jmu.edu/cs347/f26/project/plan/) right here in this README. You can edit this file however you like.)
 
 ## Sketch
-Desktop View: ![Desktop View](/images/Desktop.png.png)
-Mobile View: ![Mobile View](/images/Mobile.png)
+Desktop View: ![Desktop View](/bookkeeping/images/Desktop.png.png)
+Mobile View: ![Mobile View](/bookkeeping/images/Mobile.png)
 
 ## Narrative
 
@@ -25,7 +25,7 @@ The primary users of our application will be locals, visitors, students, and pro
 
 * Features
 - These bike routes will be differentiated by different colors
-- Ex: ![DC Metro Map](/images/DCMetro.png)
+- Ex: ![DC Metro Map](/bookkeeping/images/DCMetro.png)
 - Users can select routes and receive directions as they travel. While riding, the app shows turn-by-turn directions along the vetted routes (e.g. ‘In 300 ft, turn left onto Main St’), plus route-level cues for transfers and arrival.
 - Users will be able to give their opinion on different bike routes.  For example, if a cyclist felt unsafe on the green route, they can add comments or mark said area. All users will be able to see these comments/marks.
 - Examples of things users can mark include high-traffic areas, gravel paths, mean dogs, etc.
@@ -36,7 +36,7 @@ The primary users of our application will be locals, visitors, students, and pro
 
 
 * Data
-See our data model here: ![Data model](/images/DataModel.jpeg)
+See our data model here: ![Data model](/bookkeeping/images/DataModel.jpeg)
 Users will be able to do CRUD operations on any data within the user entity with the exception of ID.  So they can create, read, update and delete their own username, password, previous routes, saved routes, marked locations, and comfortability.  Users will also be able to do CRUD operations on their own comments.
 
 An example of this data using the user entity:
