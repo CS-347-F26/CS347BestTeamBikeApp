@@ -35,7 +35,7 @@ TIME_ZONE = 'America/New_York'
 # Off unless DJANGO_DEBUG=True is set, so production is safe by default.
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 
 # Application definition

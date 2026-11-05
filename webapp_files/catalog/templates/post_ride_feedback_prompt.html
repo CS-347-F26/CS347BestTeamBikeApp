@@ -1,0 +1,17 @@
+{% extends "base_generic.html" %}
+
+{% block title %}Route Complete{% endblock %}
+
+{% block content %}
+  <h1>Route Complete!</h1>
+
+  <p>Would you like to provide feedback about this route?</p>
+
+  <a href="{% url 'feedback-form' route_id %}">
+    Yes
+  </a>
+
+  <a href="{% url 'index' %}">
+    No, maybe later
+  </a>
+{% endblock %}
