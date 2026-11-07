@@ -84,7 +84,14 @@ Ideas from elsewhere that are **not** yet adopted (raise them when relevant, don
 - Secrets/settings come from environment variables, loaded from `webapp_files/.env` by `python-dotenv` (git-ignored; copy `webapp_files/.env.example`). `DJANGO_SECRET_KEY` is required; `DJANGO_DEBUG=True` turns debug on (off by default); `DJANGO_ALLOWED_HOSTS` is a comma-separated list of domains (defaults to `localhost,127.0.0.1`). The old hard-coded key is in git history, so treat it as public and never use it in production.
 - Deployment: a Google Cloud VM running Docker Compose + Caddy, domain `mrossiter.me` (it already hosts other course projects as subdomains). This app will be deployed there too (Kenzie's copy: `bikeapp.mrossiter.me`), so keep it Docker-friendly and configure secrets/settings via environment variables.
 - Each team member hosts their own copy on their own subdomain, so never hard-code a domain; per-deployment settings like `DJANGO_ALLOWED_HOSTS` go in that deployment's `.env`.
-- Site-wide templates (`404.html`, `500.html`, future `base.html`) live in `webapp_files/templates/`; app templates go in `catalog/templates/catalog/`. The custom 404/500 pages only show when DEBUG is off (rubric B60).
+- Site-wide templates (`404.html`, `500.html`, `registration/login.html`) live in `webapp_files/templates/` (listed in `TEMPLATES["DIRS"]`); app templates currently sit flat in `catalog/templates/` (e.g. `route_detail.html`). The custom 404/500 pages only show when DEBUG is off (rubric B60).
+
+## URL scheme (decided 2026-11-07, rubric B80)
+
+- The app is mounted at `/bike-routes/` (the Python app folder stays `catalog`); `/` redirects there. Login/logout use Django's built-in auth at `/accounts/`.
+- RESTful conventions: plural lowercase-hyphenated nouns, numeric `<int:pk>` ids (no slugs), sub-pages nested under their parent, trailing slashes. One URL for a form's GET and POST.
+- Current map (URL names in parentheses): `routes/` (`route-list`), `routes/<pk>/` (`route-detail`), `routes/<pk>/feedback/` (`feedback-form`), `routes/<pk>/feedback/thanks/` (`feedback-confirmation`), `routes/<pk>/complete/` (`post-ride-feedback-prompt`), `feedback/` (`feedback-route-selection`), `locations/` and `locations/<pk>/`, `map/`, `trips/new/` (`trip-new`), `profile/` (login required).
+- Always link with `{% url 'name' %}` / `reverse()` / `get_absolute_url`, never hard-coded paths. `UrlRoutingTests` in `catalog/tests.py` pins the paths; update it when adding a URL.
 
 ## Git workflow
 
