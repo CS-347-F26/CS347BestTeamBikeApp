@@ -7,6 +7,7 @@
 
   <p>Your feedback has been submitted successfully.</p>
 
+  <a href="{{ route.get_absolute_url }}">Back to {{ route.name }}</a>
   <a href="{% url 'index' %}">Return Home</a>
   <a href="{% url 'feedback-route-selection' %}">
     Give Feedback on Another Route

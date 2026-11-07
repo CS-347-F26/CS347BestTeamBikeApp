@@ -1,0 +1,19 @@
+{% extends "base_generic.html" %}
+
+{% block title %}{{ route.name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ route.name }}</h1>
+
+  <p><strong>Color:</strong> {{ route.color }}</p>
+  <p>
+    <strong>From</strong>
+    <a href="{% url 'location-detail' route.start_location.pk %}">{{ route.start_location.name }}</a>
+    <strong>to</strong>
+    <a href="{% url 'location-detail' route.end_location.pk %}">{{ route.end_location.name }}</a>
+  </p>
+
+  <!-- Stops, comments and ratings will go here -->
+
+  <a href="{% url 'feedback-form' route.pk %}">Give feedback on this route</a>
+{% endblock %}

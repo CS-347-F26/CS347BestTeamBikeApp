@@ -7,5 +7,13 @@
 
   <p>Select a bike route.</p>
 
-  <!-- Route list will go here. -->
+  {% if route_list %}
+    <ul>
+      {% for route in route_list %}
+        <li><a href="{{ route.get_absolute_url }}">{{ route.name }}</a> ({{ route.color }})</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>There are no routes yet.</p>
+  {% endif %}
 {% endblock %}

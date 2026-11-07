@@ -1,7 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
+from django.views import generic
 
-from .models import User, Route, RouteFeedback
+from .models import User, Route, Location, RouteFeedback
 
 
 def index(request):
@@ -20,12 +21,28 @@ def index(request):
     return render(request, "index.html", context=context)
 
 
-def route_selection(request):
-    """Display routes so the user can choose one to review."""
-    return render(
-        request,
-        "route_selection.html",
-    )
+# --- Routes ---------------------------------------------------------------
+# Generic class-based views: ListView/DetailView do the query for us, and
+# DetailView returns a 404 automatically when no route has that pk.
+
+
+class RouteListView(generic.ListView):
+    """List all routes: /bike-routes/routes/"""
+
+    model = Route
+    template_name = "route_selection.html"
+
+
+class RouteDetailView(generic.DetailView):
+    """One route: /bike-routes/routes/<pk>/"""
+
+    model = Route
+    template_name = "route_detail.html"
+
+
+# --- Route feedback -------------------------------------------------------
+# These views take the route's pk from the URL and use get_object_or_404, so
+# a missing route shows the 404 page instead of a broken form.
 
 
 def feedback_route_selection(request):
@@ -36,27 +53,68 @@ def feedback_route_selection(request):
     )
 
 
-def feedback_form(request, route_id):
-    """Display the feedback form for a selected route."""
+def feedback_form(request, pk):
+    """Display the feedback form for a selected route (GET); the same URL
+    will accept the submitted form (POST) once the form is built."""
+    route = get_object_or_404(Route, pk=pk)
     return render(
         request,
         "feedback_form.html",
-        {"route_id": route_id},
+        {"route": route},
     )
 
 
-def post_ride_feedback_prompt(request, route_id):
+def post_ride_feedback_prompt(request, pk):
     """Ask whether the user wants to give feedback after completing a route."""
+    route = get_object_or_404(Route, pk=pk)
     return render(
         request,
         "post_ride_feedback_prompt.html",
-        {"route_id": route_id},
+        {"route": route},
     )
 
 
-def feedback_confirmation(request):
-    """Display confirmation after feedback is submitted."""
+def feedback_confirmation(request, pk):
+    """Display confirmation after feedback on a route is submitted."""
+    route = get_object_or_404(Route, pk=pk)
     return render(
         request,
-        "feedback__form_complete_confirmation.html",
+        "feedback_form_complete_confirmation.html",
+        {"route": route},
     )
+
+
+# --- Locations ------------------------------------------------------------
+
+
+class LocationListView(generic.ListView):
+    """List all locations (stations / transfer points): /bike-routes/locations/"""
+
+    model = Location
+    template_name = "location_list.html"
+
+
+class LocationDetailView(generic.DetailView):
+    """One location: /bike-routes/locations/<pk>/"""
+
+    model = Location
+    template_name = "location_detail.html"
+
+
+# --- Map, trips, profile (placeholders) -----------------------------------
+
+
+def map_view(request):
+    """The schematic, tube-style map of all routes (placeholder)."""
+    return render(request, "map.html")
+
+
+def trip_new(request):
+    """Trip planner: choose a start and end station (placeholder)."""
+    return render(request, "trip_new.html")
+
+
+@login_required
+def profile(request):
+    """The logged-in rider's profile. Anonymous visitors are sent to login."""
+    return render(request, "profile.html")

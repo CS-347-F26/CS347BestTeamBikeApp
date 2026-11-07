@@ -5,9 +5,9 @@
 {% block content %}
   <h1>Route Complete!</h1>
 
-  <p>Would you like to provide feedback about this route?</p>
+  <p>Would you like to provide feedback about {{ route.name }}?</p>
 
-  <a href="{% url 'feedback-form' route_id %}">
+  <a href="{% url 'feedback-form' route.pk %}">
     Yes
   </a>
 

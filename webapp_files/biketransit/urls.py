@@ -1,27 +1,26 @@
 """
-URL configuration for locallibrary project.
+URL configuration for the biketransit project (the Bike Transit app).
 
-The `urlpatterns` list routes URLs to views. For more information please see:
+This is the project's root URLconf (ROOT_URLCONF in settings.py). It only
+wires up the top-level sections of the site; the app's own pages are listed
+in catalog/urls.py.
+
+    /admin/         Django admin site
+    /accounts/      Login, logout and password pages (Django's built-in auth)
+    /bike-routes/   The Bike Transit app itself (catalog/urls.py)
+    /               Redirects to the Bike Transit home page
+
+For more information on URL patterns see:
     https://docs.djangoproject.com/en/6.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLConf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
 from django.contrib import admin
 from django.urls import path
 
-# Use include() to add paths from the catalog application
+# Use include() to pull in other URLconfs (the catalog app, Django's auth)
 from django.urls import include
 
-# Add URL maps to redirect the base URL to our application
+# RedirectView sends the bare site URL on to the app's home page
 from django.views.generic import RedirectView
 
 # Use static() to add URL mapping to serve static files during development (only)
@@ -32,14 +31,24 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 ]
 
-
+# Login, logout and password change/reset pages from Django's auth app.
+# These use the URL names "login", "logout", etc., and their templates live
+# in templates/registration/.
 urlpatterns += [
-    path("catalog/", include("catalog.urls")),
+    path("accounts/", include("django.contrib.auth.urls")),
 ]
 
-
+# All Bike Transit pages (routes, feedback, locations, map, trips, profile).
+# The Python app is still called "catalog"; only the URL prefix is "bike-routes".
 urlpatterns += [
-    path("", RedirectView.as_view(url="catalog/")),
+    path("bike-routes/", include("catalog.urls")),
+]
+
+# Send visitors who open the bare domain to the Bike Transit home page.
+# pattern_name looks the URL up by name, so it keeps working if the prefix
+# above ever changes. permanent=False makes it a temporary (302) redirect.
+urlpatterns += [
+    path("", RedirectView.as_view(pattern_name="index", permanent=False)),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -40,7 +40,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 # With DEBUG off, a request for any other host gets a 400 error.
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
     if host.strip()
 ]
 
@@ -75,7 +75,8 @@ ROOT_URLCONF = "biketransit.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Site-wide templates (404.html, 500.html, registration/login.html)
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -137,6 +138,10 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Where to send riders after logging in or out (URL names, see catalog/urls.py)
+LOGIN_REDIRECT_URL = "index"
+LOGOUT_REDIRECT_URL = "index"
 
 
 # Email

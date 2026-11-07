@@ -5,7 +5,7 @@
 {% block content %}
   <h1>Give Feedback</h1>
 
-  <!-- Selected route name will go here -->
+  <p>Route: <a href="{{ route.get_absolute_url }}">{{ route.name }}</a></p>
 
   <form method="post">
     {% csrf_token %}

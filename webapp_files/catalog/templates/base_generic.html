@@ -10,7 +10,7 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <!-- Add additional CSS in static file -->
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'style.css' %}">
 </head>
 
 <body>
@@ -20,8 +20,22 @@
                 {% block sidebar %}
                 <ul class="sidebar-nav">
                     <li><a href="{% url 'index' %}">Home</a></li>
-                    <li><a href="{% url 'route-selection' %}">Routes</a></li>
+                    <li><a href="{% url 'map' %}">Map</a></li>
+                    <li><a href="{% url 'route-list' %}">Routes</a></li>
+                    <li><a href="{% url 'location-list' %}">Locations</a></li>
+                    <li><a href="{% url 'trip-new' %}">Plan a trip</a></li>
                     <li><a href="{% url 'feedback-route-selection' %}">Feedback</a></li>
+                    {% if user.is_authenticated %}
+                    <li><a href="{% url 'profile' %}">Profile</a></li>
+                    <li>
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link p-0">Log out</button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li><a href="{% url 'login' %}?next={{ request.path }}">Log in</a></li>
+                    {% endif %}
                 </ul>
                 {% endblock %}
             </div>

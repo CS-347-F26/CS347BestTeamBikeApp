@@ -1,0 +1,18 @@
+{% extends "base_generic.html" %}
+
+{% block title %}{{ location.name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ location.name }}</h1>
+
+  <p>{{ location.latitude }}, {{ location.longitude }}</p>
+
+  <h2>Routes through this location</h2>
+  <ul>
+    {% for route in location.routes.all %}
+      <li><a href="{{ route.get_absolute_url }}">{{ route.name }}</a></li>
+    {% empty %}
+      <li>No routes use this location yet.</li>
+    {% endfor %}
+  </ul>
+{% endblock %}
