@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page not found</title>
+  {% comment %}
+    Django shows this page whenever a URL doesn't exist, but only when DEBUG is off.
+    CSS is inline because runserver doesn't serve static files with DEBUG off.
+    Once the team has a base.html, make this page extend base.html.
+  {% endcomment %}
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 16px;
+           min-height: 100vh; box-sizing: border-box; display: flex;
+           align-items: center; justify-content: center;
+           background: #f6f6f4; color: #222; text-align: center; }
+    h1 { margin: 0 0 8px; }
+    code { background: #e8e8e4; padding: 2px 6px; border-radius: 4px; word-break: break-all; }
+    a { color: #0b5cad; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Sorry! This page was not found.</h1>
+    <p>There's nothing at <code>{{ request_path }}</code>.</p>
+    <p><a href="/">Go back to the home page</a></p>
+  </main>
+</body>
+</html>

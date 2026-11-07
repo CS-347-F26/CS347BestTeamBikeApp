@@ -35,7 +35,14 @@ TIME_ZONE = 'America/New_York'
 # Off unless DJANGO_DEBUG=True is set, so production is safe by default.
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+# Domains this site may be served from, comma-separated in DJANGO_ALLOWED_HOSTS.
+# Each teammate hosts their own copy on their own subdomain, so set it per deployment.
+# With DEBUG off, a request for any other host gets a 400 error.
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    if host.strip()
+]
 
 
 # Application definition
@@ -68,7 +75,8 @@ ROOT_URLCONF = 'biketransit.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # Site-wide templates (404.html, 500.html, later base.html) live in webapp_files/templates/.
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
