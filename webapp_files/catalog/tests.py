@@ -9,7 +9,9 @@ class NotFoundPageTests(TestCase):
     """
 
     def test_unknown_url_returns_custom_404(self):
-        response = self.client.get('/this-page-does-not-exist/')
+        response = self.client.get("/this-page-does-not-exist/")
         self.assertEqual(response.status_code, 404)
-        self.assertTemplateUsed(response, '404.html')
-        self.assertContains(response, 'Sorry! This page was not found.', status_code=404)
+        self.assertTemplateUsed(response, "404.html")
+        self.assertContains(
+            response, "Sorry! This page was not found.", status_code=404
+        )
