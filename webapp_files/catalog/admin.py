@@ -10,11 +10,22 @@ from .models import Comment, Location, Route, User
 class CustomUserAdmin(UserAdmin):
     # Show our extra User fields on the admin edit page.
     fieldsets = UserAdmin.fieldsets + (
-        ('Bike app', {'fields': ('comfortability', 'prev_routes',
-                                 'saved_routes', 'marked_locations')}),
+        (
+            "Bike app",
+            {
+                "fields": (
+                    "comfortability",
+                    "prev_routes",
+                    "saved_routes",
+                    "marked_locations",
+                )
+            },
+        ),
     )
     filter_horizontal = UserAdmin.filter_horizontal + (
-        'prev_routes', 'saved_routes', 'marked_locations',
+        "prev_routes",
+        "saved_routes",
+        "marked_locations",
     )
 
 

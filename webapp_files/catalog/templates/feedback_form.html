@@ -1,0 +1,18 @@
+{% extends "base_generic.html" %}
+
+{% block title %}Route Feedback{% endblock %}
+
+{% block content %}
+  <h1>Give Feedback</h1>
+
+  <!-- Selected route name will go here -->
+
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- Comfort rating field will go here -->
+    <!-- Written feedback field will go here -->
+
+    <button type="submit">Submit Feedback</button>
+  </form>
+{% endblock %}

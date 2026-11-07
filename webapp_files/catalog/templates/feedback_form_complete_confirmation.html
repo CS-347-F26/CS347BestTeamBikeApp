@@ -1,0 +1,14 @@
+{% extends "base_generic.html" %}
+
+{% block title %}Thank You{% endblock %}
+
+{% block content %}
+  <h1>Thank You for taking the time to provide feedback!</h1>
+
+  <p>Your feedback has been submitted successfully.</p>
+
+  <a href="{% url 'index' %}">Return Home</a>
+  <a href="{% url 'feedback-route-selection' %}">
+    Give Feedback on Another Route
+  </a>
+{% endblock %}

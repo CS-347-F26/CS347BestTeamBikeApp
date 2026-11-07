@@ -1,0 +1,14 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+  <h1>Bike Transit Home</h1>
+  <p>
+    Welcome to Bike Transit, a bike routing app where bikers help fellow bikers!
+  </p>
+  <h2>Dynamic content</h2>
+  <p>A little data:</p>
+  <ul>
+    <li><strong>We have</strong> {{ num_users }} users!</li>
+    <li><strong>Bike Transit has</strong> {{ num_routes }} routes!</li>
+  </ul>
+{% endblock %}

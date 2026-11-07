@@ -14,16 +14,14 @@ class User(AbstractUser):
 
     # Fields (username and password are inherited from AbstractUser)
     comfortability = models.PositiveSmallIntegerField(
-        default=0, help_text='How comfortable this rider is on busier roads'
+        default=0, help_text="How comfortable this rider is on busier roads"
     )
     prev_routes = models.ManyToManyField(
-        'Route', blank=True, related_name='previous_riders'
+        "Route", blank=True, related_name="previous_riders"
     )
-    saved_routes = models.ManyToManyField(
-        'Route', blank=True, related_name='saved_by'
-    )
+    saved_routes = models.ManyToManyField("Route", blank=True, related_name="saved_by")
     marked_locations = models.ManyToManyField(
-        'Location', blank=True, related_name='marked_by'
+        "Location", blank=True, related_name="marked_by"
     )
 
     def __str__(self):
@@ -42,7 +40,7 @@ class Location(models.Model):
 
     # Metadata
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
 
     # Methods
     def __str__(self):
@@ -59,13 +57,13 @@ class Route(models.Model):
     color = models.CharField(max_length=30)
     # PROTECT stops a location from being deleted while a route still uses it.
     start_location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, related_name='routes_starting_here'
+        Location, on_delete=models.PROTECT, related_name="routes_starting_here"
     )
     end_location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, related_name='routes_ending_here'
+        Location, on_delete=models.PROTECT, related_name="routes_ending_here"
     )
     marked_locations = models.ManyToManyField(
-        Location, blank=True, related_name='routes'
+        Location, blank=True, related_name="routes"
     )
     up_votes = models.PositiveIntegerField(default=0)
     down_votes = models.PositiveIntegerField(default=0)
@@ -73,12 +71,12 @@ class Route(models.Model):
 
     # Metadata
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
 
     # Methods
     def get_absolute_url(self):
         """Returns the URL to access a particular route."""
-        return reverse('route-detail', args=[str(self.id)])
+        return reverse("route-detail", args=[str(self.id)])
 
     def __str__(self):
         """String for representing the Route object (in Admin site etc.)."""
@@ -95,21 +93,45 @@ class Comment(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True
     )
     route = models.ForeignKey(
-        Route, on_delete=models.CASCADE, null=True, blank=True,
-        related_name='comments'
+        Route, on_delete=models.CASCADE, null=True, blank=True, related_name="comments"
     )
     location = models.ForeignKey(
-        Location, on_delete=models.CASCADE, null=True, blank=True,
-        related_name='comments'
+        Location,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="comments",
     )
     up_votes = models.PositiveIntegerField(default=0)
     down_votes = models.PositiveIntegerField(default=0)
 
     # Metadata
     class Meta:
-        ordering = ['-id']
+        ordering = ["-id"]
 
     # Methods
     def __str__(self):
         """String for representing the Comment object (in Admin site etc.)."""
         return self.text[:50]
+
+
+class RouteFeedback(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="route_feedback",
+    )
+    route = models.ForeignKey(
+        Route,
+        on_delete=models.CASCADE,
+        related_name="feedback",
+    )
+    comfort_rating = models.PositiveSmallIntegerField()
+    text = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.route} feedback by {self.user}"
