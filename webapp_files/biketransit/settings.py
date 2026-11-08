@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from pathlib import Path
 
+import environ
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,22 +28,32 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+SECRET_KEY = os.environ.get("SECRET_KEY") or os.environ["DJANGO_SECRET_KEY"]
 TIME_ZONE = "America/New_York"
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Off unless DJANGO_DEBUG=True is set, so production is safe by default.
-DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+DEBUG = os.environ.get("DEBUG", os.environ.get("DJANGO_DEBUG", "False")) == "True"
 
-# Domains this site may be served from, comma-separated in DJANGO_ALLOWED_HOSTS.
-# Each teammate hosts their own copy on their own subdomain, so set it per deployment.
-# With DEBUG off, a request for any other host gets a 400 error.
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if host.strip()
-]
+env = environ.Env()
+
+# Keep SQLite for local development; the deployment Compose file sets DATABASE_URL.
+DATABASES = {
+    "default": env.db(
+        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+    )
+}
+
+# Each deployment sets its own hostname and corresponding trusted origin.
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=env.list(
+        "DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"]
+    ),
+)
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # Application definition
@@ -62,6 +73,7 @@ AUTH_USER_MODEL = "catalog.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -89,17 +101,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "biketransit.wsgi.application"
-
-
-# Database
-# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
 
 
 # Password validation
