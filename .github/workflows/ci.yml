@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: psf/black@stable
+        with:
+          options: "--check --diff"
+          src: "."
+
+  django:
+    name: Django checks and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --locked
+        working-directory: webapp_files
+
+      - name: Check Django configuration
+        run: uv run python manage.py check
+        working-directory: webapp_files
+        env:
+          DJANGO_SECRET_KEY: ci-only-secret-key
+
+      - name: Run tests
+        run: uv run python manage.py test
+        working-directory: webapp_files
+        env:
+          DJANGO_SECRET_KEY: ci-only-secret-key
+
+  docker:
+    name: Build deployment image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build --tag biketransit-ci .

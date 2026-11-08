@@ -40,17 +40,13 @@ env = environ.Env()
 
 # Keep SQLite for local development; the deployment Compose file sets DATABASE_URL.
 DATABASES = {
-    "default": env.db(
-        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-    )
+    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
 
 # Each deployment sets its own hostname and corresponding trusted origin.
 ALLOWED_HOSTS = env.list(
     "ALLOWED_HOSTS",
-    default=env.list(
-        "DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"]
-    ),
+    default=env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"]),
 )
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
