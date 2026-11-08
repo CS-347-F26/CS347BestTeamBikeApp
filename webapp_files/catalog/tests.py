@@ -127,3 +127,52 @@ class UrlRoutingTests(TestCase):
         self.client.login(username="rider", password="test-pass-123")
         response = self.client.get(reverse("profile"))
         self.assertEqual(response.status_code, 200)
+
+
+class MapViewTests(TestCase):
+    def test_map_includes_locations_and_straight_route_endpoints(self):
+        start = Location.objects.create(
+            name="Court Square", latitude=38.449, longitude=-78.869
+        )
+        end = Location.objects.create(
+            name="JMU Quad", latitude=38.438, longitude=-78.871
+        )
+        Route.objects.create(
+            name="Red Line",
+            color="red",
+            start_location=start,
+            end_location=end,
+        )
+
+        response = self.client.get(reverse("map"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="bike-map"')
+        self.assertContains(response, "tile.openstreetmap.org")
+        self.assertEqual(
+            response.context["map_data"],
+            {
+                "locations": [
+                    {
+                        "id": start.pk,
+                        "name": "Court Square",
+                        "latitude": 38.449,
+                        "longitude": -78.869,
+                    },
+                    {
+                        "id": end.pk,
+                        "name": "JMU Quad",
+                        "latitude": 38.438,
+                        "longitude": -78.871,
+                    },
+                ],
+                "routes": [
+                    {
+                        "name": "Red Line",
+                        "color": "red",
+                        "start": [38.449, -78.869],
+                        "end": [38.438, -78.871],
+                    }
+                ],
+            },
+        )
