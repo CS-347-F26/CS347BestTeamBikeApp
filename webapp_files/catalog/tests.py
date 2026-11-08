@@ -148,7 +148,10 @@ class MapViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="bike-map"')
-        self.assertContains(response, "tile.openstreetmap.org")
+        self.assertContains(response, "min-height: 360px")
+        self.assertContains(response, "tiles.openfreemap.org/styles/liberty")
+        self.assertContains(response, "maplibre-gl@6.17.0")
+        self.assertContains(response, "OpenStreetMap contributors")
         self.assertEqual(
             response.context["map_data"],
             {

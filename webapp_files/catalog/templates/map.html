@@ -5,8 +5,7 @@
 {% block extra_head %}
   <link
     rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    href="https://unpkg.com/maplibre-gl@6.17.0/dist/maplibre-gl.css"
     crossorigin=""
   >
 {% endblock %}
@@ -14,22 +13,36 @@
 {% block content %}
   <h1>Bike Transit Map</h1>
   <p>Explore bike routes and locations around Harrisonburg, Virginia.</p>
-  <div id="bike-map" role="region" aria-label="Map of bike routes and locations"></div>
+  <div
+    id="bike-map"
+    role="region"
+    aria-label="Map of bike routes and locations"
+    style="width: 100%; height: min(70vh, 680px); min-height: 360px;"
+  ></div>
+  <p id="map-error" class="map-attribution" role="status" hidden>
+    The map tiles could not be loaded. Please try again later.
+  </p>
   <p class="map-attribution">
-    Map tiles by <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>.
+    Map data by <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>,
+    <a href="https://openmaptiles.org/">OpenMapTiles</a>, and
+    <a href="https://openfreemap.org/">OpenFreeMap</a>.
     Route lines connect each route's start and end locations.
   </p>
 
   {{ map_data|json_script:"map-data" }}
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
-  <script>
+  <script type="module">
+    import * as maplibregl from "https://unpkg.com/maplibre-gl@6.17.0/dist/maplibre-gl.mjs";
+
     const mapData = JSON.parse(document.getElementById("map-data").textContent);
-    const map = L.map("bike-map").setView([38.4496, -78.8689], 13);
-    const bounds = L.latLngBounds([]);
+    const mapError = document.getElementById("map-error");
+    const map = new maplibregl.Map({
+      container: "bike-map",
+      style: "https://tiles.openfreemap.org/styles/liberty",
+      center: [-78.8689, 38.4496],
+      zoom: 13,
+    });
+    const bounds = new maplibregl.LngLatBounds();
+    const routeFeatures = [];
     const isValidPoint = (point) =>
       Array.isArray(point) &&
       point.length === 2 &&
@@ -40,37 +53,68 @@
       point[1] >= -180 &&
       point[1] <= 180;
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
-    }).addTo(map);
+    map.addControl(new maplibregl.NavigationControl(), "top-left");
+    map.on("error", () => {
+      mapError.hidden = false;
+    });
 
     mapData.locations.forEach((location) => {
-      const point = [location.latitude, location.longitude];
+      const point = [location.longitude, location.latitude];
       if (!isValidPoint(point)) return;
 
-      L.marker(point)
-        .addTo(map)
-        .bindPopup(document.createTextNode(location.name));
+      new maplibregl.Marker({ color: "#2d6a4f" })
+        .setLngLat(point)
+        .setPopup(new maplibregl.Popup().setText(location.name))
+        .addTo(map);
       bounds.extend(point);
     });
 
     mapData.routes.forEach((route) => {
       if (!isValidPoint(route.start) || !isValidPoint(route.end)) return;
 
-      L.polyline([route.start, route.end], {
-        color: route.color || "#2d6a4f",
-        weight: 5,
-      })
-        .addTo(map)
-        .bindPopup(document.createTextNode(route.name));
-      bounds.extend(route.start);
-      bounds.extend(route.end);
+      const start = [route.start[1], route.start[0]];
+      const end = [route.end[1], route.end[0]];
+      routeFeatures.push({
+        type: "Feature",
+        properties: { name: route.name, color: route.color },
+        geometry: { type: "LineString", coordinates: [start, end] },
+      });
+      bounds.extend(start);
+      bounds.extend(end);
     });
 
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
-    }
+    map.on("load", () => {
+      map.addSource("bike-routes", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: routeFeatures },
+      });
+      map.addLayer({
+        id: "bike-routes",
+        type: "line",
+        source: "bike-routes",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["to-color", ["get", "color"], "#2d6a4f"],
+          "line-width": 5,
+        },
+      });
+      map.on("click", "bike-routes", (event) => {
+        const feature = event.features[0];
+        new maplibregl.Popup()
+          .setLngLat(event.lngLat)
+          .setText(feature.properties.name)
+          .addTo(map);
+      });
+      map.on("mouseenter", "bike-routes", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "bike-routes", () => {
+        map.getCanvas().style.cursor = "";
+      });
+
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds, { padding: 24, maxZoom: 15 });
+      }
+    });
   </script>
 {% endblock %}
