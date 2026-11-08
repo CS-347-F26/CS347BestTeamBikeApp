@@ -1,3 +1,5 @@
+from math import isfinite
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic
@@ -105,8 +107,46 @@ class LocationDetailView(generic.DetailView):
 
 
 def map_view(request):
-    """The schematic, tube-style map of all routes (placeholder)."""
-    return render(request, "map.html")
+    """Display Harrisonburg locations and straight-line route connections."""
+    locations = []
+    valid_location_ids = set()
+    for location in Location.objects.all():
+        if (
+            isfinite(location.latitude)
+            and isfinite(location.longitude)
+            and -90 <= location.latitude <= 90
+            and -180 <= location.longitude <= 180
+        ):
+            locations.append(
+                {
+                    "id": location.pk,
+                    "name": location.name,
+                    "latitude": location.latitude,
+                    "longitude": location.longitude,
+                }
+            )
+            valid_location_ids.add(location.pk)
+
+    routes = [
+        {
+            "name": route.name,
+            "color": route.color,
+            "start": [
+                route.start_location.latitude,
+                route.start_location.longitude,
+            ],
+            "end": [route.end_location.latitude, route.end_location.longitude],
+        }
+        for route in Route.objects.select_related("start_location", "end_location")
+        if route.start_location_id in valid_location_ids
+        and route.end_location_id in valid_location_ids
+    ]
+
+    return render(
+        request,
+        "map.html",
+        {"map_data": {"locations": locations, "routes": routes}},
+    )
 
 
 def trip_new(request):
