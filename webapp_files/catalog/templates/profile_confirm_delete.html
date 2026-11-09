@@ -1,0 +1,19 @@
+{% extends "base_generic.html" %}
+
+{% block title %}Delete Account{% endblock %}
+
+{% block content %}
+  <h1>Delete Your Account?</h1>
+
+  <p>
+    Are you sure you want to delete the account
+    <strong>{{ user.username }}</strong>? This can't be undone. Your saved
+    routes, previous routes and marked locations will be removed.
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Yes, delete my account</button>
+    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">Cancel</a>
+  </form>
+{% endblock %}

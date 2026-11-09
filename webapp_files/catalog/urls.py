@@ -73,6 +73,7 @@ urlpatterns += [
 urlpatterns += [
     path("profile/", views.profile, name="profile"),
     path("profile/edit/", views.profile_edit, name="profile-edit"),
+    path("profile/delete/", views.profile_delete, name="profile-delete"),
 ]
 
 # Account creation

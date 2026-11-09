@@ -1,7 +1,7 @@
 from math import isfinite
 
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic
 from django.contrib import messages
@@ -175,6 +175,18 @@ def profile_edit(request):
     else:
         form = ProfileForm(instance=request.user)
     return render(request, "profile_edit.html", {"form": form})
+
+
+@login_required
+def profile_delete(request):
+    """Ask for confirmation (GET), then delete the rider's own account (POST)."""
+    if request.method == "POST":
+        user = request.user
+        logout(request)
+        user.delete()
+        messages.success(request, "Your account was deleted.")
+        return redirect("index")
+    return render(request, "profile_confirm_delete.html")
 
 
 # --- Sign up form -------------------------------------------------------

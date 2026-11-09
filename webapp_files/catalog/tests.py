@@ -266,3 +266,75 @@ class ProfileEditTests(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.username, "biker_24")
         self.assertEqual(self.user.comfortability, 3)
+
+
+class ProfileDeleteTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="rider", password="test-pass-123")
+        self.url = reverse("profile-delete")
+
+    def test_requires_login(self):
+        response = self.client.get(self.url)
+        self.assertRedirects(
+            response,
+            "/accounts/login/?next=/bike-routes/profile/delete/",
+            fetch_redirect_response=False,
+        )
+
+    def test_get_shows_confirmation_and_does_not_delete(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.get(self.url)
+        self.assertContains(response, "Are you sure")
+        self.assertTrue(User.objects.filter(username="rider").exists())
+
+    def test_post_deletes_account_and_logs_out(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.post(self.url)
+        self.assertRedirects(response, reverse("index"), fetch_redirect_response=False)
+        self.assertFalse(User.objects.filter(username="rider").exists())
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+
+class LoginLogoutTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="rider", password="test-pass-123")
+
+    def test_login_page_has_form(self):
+        response = self.client.get(reverse("login"))
+        self.assertContains(response, 'name="username"')
+        self.assertContains(response, "csrfmiddlewaretoken")
+
+    def test_login_with_valid_credentials(self):
+        response = self.client.post(
+            reverse("login"), {"username": "rider", "password": "test-pass-123"}
+        )
+        self.assertRedirects(response, reverse("index"), fetch_redirect_response=False)
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_login_with_wrong_password_fails(self):
+        response = self.client.post(
+            reverse("login"), {"username": "rider", "password": "wrong-pass"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Your username and password")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_session_is_maintained_across_pages(self):
+        self.client.login(username="rider", password="test-pass-123")
+        for name in ("index", "profile"):
+            with self.subTest(name=name):
+                response = self.client.get(reverse(name))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "Log out")
+
+    def test_logout_via_post_ends_session(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.post(reverse("logout"))
+        self.assertRedirects(response, reverse("index"), fetch_redirect_response=False)
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertContains(self.client.get(reverse("index")), "Log in")
+
+    def test_logout_rejects_get(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.get(reverse("logout"))
+        self.assertEqual(response.status_code, 405)
