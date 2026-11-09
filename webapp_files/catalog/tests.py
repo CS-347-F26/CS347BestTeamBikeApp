@@ -338,3 +338,35 @@ class LoginLogoutTests(TestCase):
         self.client.login(username="rider", password="test-pass-123")
         response = self.client.get(reverse("logout"))
         self.assertEqual(response.status_code, 405)
+
+
+class AuthEnforcedTests(TestCase):
+    def setUp(self):
+        User.objects.create_user(username="rider", password="test-pass-123")
+        self.protected = ["profile", "profile-edit", "profile-delete"]
+
+    def test_anonymous_is_redirected_to_login(self):
+        for name in self.protected:
+            with self.subTest(name=name):
+                url = reverse(name)
+                response = self.client.get(url)
+                self.assertRedirects(
+                    response,
+                    f"{reverse('login')}?next={url}",
+                    fetch_redirect_response=False,
+                )
+
+    def test_logged_in_user_can_access(self):
+        self.client.login(username="rider", password="test-pass-123")
+        for name in self.protected:
+            with self.subTest(name=name):
+                response = self.client.get(reverse(name))
+                self.assertEqual(response.status_code, 200)
+
+    def test_login_returns_user_to_requested_page(self):
+        url = reverse("profile")
+        response = self.client.post(
+            reverse("login"),
+            {"username": "rider", "password": "test-pass-123", "next": url},
+        )
+        self.assertRedirects(response, url, fetch_redirect_response=False)
