@@ -8,7 +8,7 @@
   <p>Would you like to provide feedback about {{ route.name }}?</p>
 
   <a href="{% url 'feedback-form' route.pk %}">
-    Yes
+    Yes, give feedback on {{ route.name }}
   </a>
 
   <a href="{% url 'index' %}">

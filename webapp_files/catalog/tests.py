@@ -370,3 +370,12 @@ class AuthEnforcedTests(TestCase):
             {"username": "rider", "password": "test-pass-123", "next": url},
         )
         self.assertRedirects(response, url, fetch_redirect_response=False)
+
+
+class LandmarkTests(TestCase):
+    def test_pages_have_nav_and_main(self):
+        for name in ("index", "route-list", "location-list", "map", "login"):
+            with self.subTest(name=name):
+                response = self.client.get(reverse(name))
+                self.assertContains(response, "<nav")
+                self.assertContains(response, "<main")

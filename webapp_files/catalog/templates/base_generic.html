@@ -15,9 +15,10 @@
 </head>
 
 <body>
+    <a class="visually-hidden-focusable" href="#main-content">Skip to main content</a>
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-2">
+            <nav class="col-sm-2" aria-label="Main">
                 {% block sidebar %}
                 <ul class="sidebar-nav">
                     <li><a href="{% url 'index' %}">Home</a></li>
@@ -37,17 +38,18 @@
                     {% else %}
                     {% url 'login' as login_url %}
                     <li>
-                    <a href="{{ login_url }}{% if request.path != login_url %}?next={{ request.path }}{% endif %}">Log in</a>
+                        <a href="{{ login_url }}{% if request.path != login_url %}?next={{ request.path }}{% endif %}">Log in</a>
                     </li>
                     {% endif %}
                 </ul>
                 {% endblock %}
-            </div>
-            <div class="col-sm-10 ">
+            </nav>
+            <main id="main-content" class="col-sm-10">
                 {% for message in messages %}
                     <div class="alert alert-success mt-3" role="status">{{ message }}</div>
                 {% endfor %}
-                {% block content %}{% endblock %}</div>
+                {% block content %}{% endblock %}
+            </main>
         </div>
     </div>
 </body>

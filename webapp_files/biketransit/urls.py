@@ -27,6 +27,10 @@ from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 
+from django.contrib.auth import views as auth_views
+
+from catalog.forms import StyledAuthenticationForm
+
 urlpatterns = [
     path("admin/", admin.site.urls),
 ]
@@ -35,6 +39,11 @@ urlpatterns = [
 # These use the URL names "login", "logout", etc., and their templates live
 # in templates/registration/.
 urlpatterns += [
+    path(
+        "accounts/login/",
+        auth_views.LoginView.as_view(authentication_form=StyledAuthenticationForm),
+        name="login",
+    ),
     path("accounts/", include("django.contrib.auth.urls")),
 ]
 
