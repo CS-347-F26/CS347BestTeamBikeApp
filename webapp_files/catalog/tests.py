@@ -214,3 +214,55 @@ class SignUpTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.filter(username="biker_24").exists())
+
+
+class ReadTests(TestCase):
+    def setUp(self):
+        self.location = Location.objects.create(
+            name="Court Square", latitude=38.449, longitude=-78.869
+        )
+
+    def test_location_list_shows_records(self):
+        response = self.client.get(reverse("location-list"))
+        self.assertContains(response, "Court Square")
+
+    def test_location_detail_shows_record(self):
+        response = self.client.get(reverse("location-detail", args=[self.location.pk]))
+        self.assertContains(response, "Court Square")
+        self.assertContains(response, "38.449")
+
+    def test_profile_shows_user_data(self):
+        user = User.objects.create_user(
+            username="biker_24", password="test-pass-123", comfortability=2
+        )
+        user.marked_locations.add(self.location)
+        self.client.login(username="biker_24", password="test-pass-123")
+        response = self.client.get(reverse("profile"))
+        self.assertContains(response, "biker_24")
+        self.assertContains(response, "Court Square")
+
+
+class ProfileEditTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="rider", password="test-pass-123")
+        self.url = reverse("profile-edit")
+
+    def test_requires_login(self):
+        response = self.client.get(self.url)
+        self.assertRedirects(
+            response,
+            "/accounts/login/?next=/bike-routes/profile/edit/",
+            fetch_redirect_response=False,
+        )
+
+    def test_update_changes_profile(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.post(
+            self.url, {"username": "biker_24", "comfortability": 3}
+        )
+        self.assertRedirects(
+            response, reverse("profile"), fetch_redirect_response=False
+        )
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "biker_24")
+        self.assertEqual(self.user.comfortability, 3)

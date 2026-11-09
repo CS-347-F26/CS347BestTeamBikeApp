@@ -72,6 +72,7 @@ urlpatterns += [
 # The logged-in rider's profile
 urlpatterns += [
     path("profile/", views.profile, name="profile"),
+    path("profile/edit/", views.profile_edit, name="profile-edit"),
 ]
 
 # Account creation

@@ -4,9 +4,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic
+from django.contrib import messages
 
 from .models import User, Route, Location, RouteFeedback
-from .forms import SignUpForm
+from .forms import ProfileForm, SignUpForm
 
 
 def index(request):
@@ -160,6 +161,20 @@ def trip_new(request):
 def profile(request):
     """The logged-in rider's profile. Anonymous visitors are sent to login."""
     return render(request, "profile.html")
+
+
+@login_required
+def profile_edit(request):
+    """Let the logged-in rider edit their own profile."""
+    if request.method == "POST":
+        form = ProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your profile was updated.")
+            return redirect("profile")
+    else:
+        form = ProfileForm(instance=request.user)
+    return render(request, "profile_edit.html", {"form": form})
 
 
 # --- Sign up form -------------------------------------------------------

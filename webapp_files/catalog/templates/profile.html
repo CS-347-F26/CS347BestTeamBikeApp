@@ -34,4 +34,9 @@
       <li>No previous routes yet.</li>
     {% endfor %}
   </ul>
+
+    <a href="{% url 'profile-edit' %}" class="btn btn-primary">Edit profile</a>
+  <a href="{% url 'password_change' %}" class="btn btn-outline-secondary">
+    Change password
+  </a>
 {% endblock %}
