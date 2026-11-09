@@ -73,3 +73,8 @@ urlpatterns += [
 urlpatterns += [
     path("profile/", views.profile, name="profile"),
 ]
+
+# Account creation
+urlpatterns += [
+    path("signup/", views.signup, name="signup"),
+]

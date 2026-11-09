@@ -1,10 +1,12 @@
 from math import isfinite
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic
 
 from .models import User, Route, Location, RouteFeedback
+from .forms import SignUpForm
 
 
 def index(request):
@@ -158,3 +160,17 @@ def trip_new(request):
 def profile(request):
     """The logged-in rider's profile. Anonymous visitors are sent to login."""
     return render(request, "profile.html")
+
+# --- Sign up form -------------------------------------------------------
+
+def signup(request):
+    """Create a new rider account, then log them in."""
+    if request.method == "POST":
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect("profile")
+    else:
+        form = SignUpForm()
+    return render(request, "registration/signup.html", {"form": form})
