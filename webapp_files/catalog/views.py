@@ -161,7 +161,9 @@ def profile(request):
     """The logged-in rider's profile. Anonymous visitors are sent to login."""
     return render(request, "profile.html")
 
+
 # --- Sign up form -------------------------------------------------------
+
 
 def signup(request):
     """Create a new rider account, then log them in."""

@@ -5,5 +5,33 @@
 {% block content %}
   <h1>{{ user.username }}</h1>
 
-  <!-- Comfort level, saved routes and previous routes will go here -->
+  <p><strong>Comfortability:</strong> {{ user.comfortability }}</p>
+  <p><strong>Member since:</strong> {{ user.date_joined|date:"M j, Y" }}</p>
+
+  <h2>Marked locations</h2>
+  <ul>
+    {% for location in user.marked_locations.all %}
+      <li><a href="{% url 'location-detail' location.pk %}">{{ location.name }}</a></li>
+    {% empty %}
+      <li>No marked locations yet.</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Saved routes</h2>
+  <ul>
+    {% for route in user.saved_routes.all %}
+      <li><a href="{{ route.get_absolute_url }}">{{ route.name }}</a></li>
+    {% empty %}
+      <li>No saved routes yet.</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Previous routes</h2>
+  <ul>
+    {% for route in user.prev_routes.all %}
+      <li><a href="{{ route.get_absolute_url }}">{{ route.name }}</a></li>
+    {% empty %}
+      <li>No previous routes yet.</li>
+    {% endfor %}
+  </ul>
 {% endblock %}

@@ -179,3 +179,38 @@ class MapViewTests(TestCase):
                 ],
             },
         )
+
+
+class SignUpTests(TestCase):
+    def setUp(self):
+        self.url = reverse("signup")
+
+    def test_signup_page_loads(self):
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+
+    def test_valid_signup_creates_user_and_logs_in(self):
+        response = self.client.post(
+            self.url,
+            {
+                "username": "biker_24",
+                "password1": "I_lov3-bIkIng43",
+                "password2": "I_lov3-bIkIng43",
+            },
+        )
+        self.assertRedirects(
+            response, reverse("profile"), fetch_redirect_response=False
+        )
+        self.assertTrue(User.objects.filter(username="biker_24").exists())
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_mismatched_passwords_are_rejected(self):
+        response = self.client.post(
+            self.url,
+            {
+                "username": "biker_24",
+                "password1": "I_lov3-bIkIng43",
+                "password2": "different-pass-99",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username="biker_24").exists())
