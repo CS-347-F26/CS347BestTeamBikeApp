@@ -7,44 +7,83 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('catalog', '0002_routefeedback'),
+        ("catalog", "0002_routefeedback"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RouteWaypoint',
+            name="RouteWaypoint",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('order', models.PositiveIntegerField()),
-                ('route', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='route_waypoints', to='catalog.route')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("order", models.PositiveIntegerField()),
+                (
+                    "route",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="route_waypoints",
+                        to="catalog.route",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['route', 'order'],
+                "ordering": ["route", "order"],
             },
         ),
         migrations.CreateModel(
-            name='Waypoint',
+            name="Waypoint",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('notes', models.TextField(blank=True)),
-                ('latitude', models.FloatField()),
-                ('longitude', models.FloatField()),
-                ('likes', models.PositiveIntegerField(default=0)),
-                ('dislikes', models.PositiveIntegerField(default=0)),
-                ('routes', models.ManyToManyField(blank=True, related_name='waypoints', through='catalog.RouteWaypoint', to='catalog.route')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("notes", models.TextField(blank=True)),
+                ("latitude", models.FloatField()),
+                ("longitude", models.FloatField()),
+                ("likes", models.PositiveIntegerField(default=0)),
+                ("dislikes", models.PositiveIntegerField(default=0)),
+                (
+                    "routes",
+                    models.ManyToManyField(
+                        blank=True,
+                        related_name="waypoints",
+                        through="catalog.RouteWaypoint",
+                        to="catalog.route",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='routewaypoint',
-            name='waypoint',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='route_waypoints', to='catalog.waypoint'),
+            model_name="routewaypoint",
+            name="waypoint",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="route_waypoints",
+                to="catalog.waypoint",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='routewaypoint',
-            constraint=models.UniqueConstraint(fields=('route', 'order'), name='unique_waypoint_order_per_route'),
+            model_name="routewaypoint",
+            constraint=models.UniqueConstraint(
+                fields=("route", "order"), name="unique_waypoint_order_per_route"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='routewaypoint',
-            constraint=models.UniqueConstraint(fields=('route', 'waypoint'), name='unique_waypoint_per_route'),
+            model_name="routewaypoint",
+            constraint=models.UniqueConstraint(
+                fields=("route", "waypoint"), name="unique_waypoint_per_route"
+            ),
         ),
     ]

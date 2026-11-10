@@ -192,4 +192,3 @@ class RouteFeedback(models.Model):
 
     def __str__(self):
         return f"{self.route} feedback by {self.user}"
-
