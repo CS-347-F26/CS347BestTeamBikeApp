@@ -1,7 +1,8 @@
+from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Location, Route, User
+from .models import Location, Route, RouteWaypoint, User, Waypoint
 
 
 class NotFoundPageTests(TestCase):
@@ -379,3 +380,42 @@ class LandmarkTests(TestCase):
                 response = self.client.get(reverse(name))
                 self.assertContains(response, "<nav")
                 self.assertContains(response, "<main")
+
+
+class WaypointModelTests(TestCase):
+    """Waypoints keep a per-route order, and one waypoint can sit at a
+    different index on each route it belongs to."""
+
+    @classmethod
+    def setUpTestData(cls):
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.438, longitude=-78.871)
+        cls.red = Route.objects.create(
+            name="Red Line", color="red", start_location=start, end_location=end
+        )
+        cls.green = Route.objects.create(
+            name="Green Line", color="green", start_location=start, end_location=end
+        )
+        cls.first = Waypoint.objects.create(latitude=38.44, longitude=-78.87)
+        cls.second = Waypoint.objects.create(latitude=38.45, longitude=-78.86)
+        # Added out of order to check the ordering comes from `order`.
+        RouteWaypoint.objects.create(route=cls.red, waypoint=cls.second, order=1)
+        RouteWaypoint.objects.create(route=cls.red, waypoint=cls.first, order=0)
+
+    def test_defaults(self):
+        self.assertEqual(self.first.likes, 0)
+        self.assertEqual(self.first.dislikes, 0)
+        self.assertEqual(self.first.notes, "")
+
+    def test_route_waypoints_in_order(self):
+        waypoints = [rw.waypoint for rw in self.red.route_waypoints.all()]
+        self.assertEqual(waypoints, [self.first, self.second])
+
+    def test_shared_waypoint_has_order_per_route(self):
+        RouteWaypoint.objects.create(route=self.green, waypoint=self.second, order=0)
+        self.assertCountEqual(self.second.routes.all(), [self.red, self.green])
+
+    def test_duplicate_order_on_route_rejected(self):
+        extra = Waypoint.objects.create(latitude=38.46, longitude=-78.85)
+        with self.assertRaises(IntegrityError):
+            RouteWaypoint.objects.create(route=self.red, waypoint=extra, order=0)

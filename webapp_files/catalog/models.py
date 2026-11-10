@@ -83,6 +83,63 @@ class Route(models.Model):
         return self.name
 
 
+class Waypoint(models.Model):
+    """A marker along one or more routes.
+
+    A waypoint's position (order) is stored on RouteWaypoint rather than here,
+    because a waypoint shared by two routes can sit at a different index on
+    each one. Use `waypoint.routes` / `route.waypoints` to list them, and
+    `route.route_waypoints` to get them in order."""
+
+    # Fields (id is Django's automatic integer primary key)
+    routes = models.ManyToManyField(
+        Route, through="RouteWaypoint", related_name="waypoints", blank=True
+    )
+    notes = models.TextField(blank=True)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    likes = models.PositiveIntegerField(default=0)
+    dislikes = models.PositiveIntegerField(default=0)
+
+    # Methods
+    def __str__(self):
+        """String for representing the Waypoint object (in Admin site etc.)."""
+        return f"Waypoint {self.id} ({self.latitude}, {self.longitude})"
+
+
+class RouteWaypoint(models.Model):
+    """Places a waypoint in a route. `order` is its 0-based index if the
+    route were a list of waypoints from beginning to end."""
+
+    # Fields
+    route = models.ForeignKey(
+        Route, on_delete=models.CASCADE, related_name="route_waypoints"
+    )
+    waypoint = models.ForeignKey(
+        Waypoint, on_delete=models.CASCADE, related_name="route_waypoints"
+    )
+    order = models.PositiveIntegerField()
+
+    # Metadata
+    class Meta:
+        ordering = ["route", "order"]
+        constraints = [
+            # No two waypoints share an index on the same route...
+            models.UniqueConstraint(
+                fields=["route", "order"], name="unique_waypoint_order_per_route"
+            ),
+            # ...and a waypoint appears at most once per route.
+            models.UniqueConstraint(
+                fields=["route", "waypoint"], name="unique_waypoint_per_route"
+            ),
+        ]
+
+    # Methods
+    def __str__(self):
+        """String for representing the RouteWaypoint object (in Admin site etc.)."""
+        return f"{self.route} #{self.order}: {self.waypoint}"
+
+
 class Comment(models.Model):
     """Feedback left by a user on a route or a location."""
 
@@ -135,3 +192,4 @@ class RouteFeedback(models.Model):
 
     def __str__(self):
         return f"{self.route} feedback by {self.user}"
+
