@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Comment, Location, Route, User
+from .models import Comment, Location, Route, RouteWaypoint, User, Waypoint
 
 # Register your models here.
 
@@ -29,6 +29,22 @@ class CustomUserAdmin(UserAdmin):
     )
 
 
-admin.site.register(Route)
+class RouteWaypointInline(admin.TabularInline):
+    """Lets admins add waypoints (with their order) right on a route's page."""
+
+    model = RouteWaypoint
+    extra = 1
+
+
+@admin.register(Route)
+class RouteAdmin(admin.ModelAdmin):
+    inlines = [RouteWaypointInline]
+
+
+@admin.register(Waypoint)
+class WaypointAdmin(admin.ModelAdmin):
+    inlines = [RouteWaypointInline]
+
+
 admin.site.register(Location)
 admin.site.register(Comment)

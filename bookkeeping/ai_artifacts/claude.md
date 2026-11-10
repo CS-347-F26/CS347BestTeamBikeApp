@@ -61,6 +61,7 @@ How it's implemented in `webapp_files/catalog/models.py` (decided 2026-11-03):
 - `Route` has an extra `name` field (e.g. "Red Line") not on the board.
 - Comments link to their route or location with foreign keys on `Comment` (`route.comments`, `location.comments`), rather than comment fields on Route/Location.
 - All models use Django's automatic integer `id`.
+- **Waypoints** (added 2026-11-10): markers along routes. `Waypoint` has notes, latitude, longitude, likes, dislikes, and `routes` (many-to-many). The waypoint's order (0-based index from start to end of a route) lives on the through model `RouteWaypoint` (route, waypoint, order), because one waypoint can be on several routes at different positions. `route.route_waypoints` returns them in order; order and waypoint are each unique per route.
 
 Ideas from elsewhere that are **not** yet adopted (raise them when relevant, don't add them unasked):
 
