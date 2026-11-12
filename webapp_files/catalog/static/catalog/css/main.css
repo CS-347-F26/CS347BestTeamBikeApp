@@ -1,0 +1,41 @@
+/*
+ * main.css: styles shared by every page.
+ *
+ * Mobile first: rules outside a media query are for phones (~375px wide).
+ * Desktop changes go in @media (min-width: 48rem) { ... } blocks.
+ *
+ * This file loads after Bootstrap, so a rule here wins over Bootstrap's
+ * when both target the same thing. Styles for a single page go in
+ * pages/<page>.css; a style moves here once a second page needs it.
+ */
+
+/* ==========================================================================
+   1. Variables
+   Colors, route-line colors, spacing and fonts. Can also set Bootstrap's
+   --bs-* variables to theme the Bootstrap parts we use.
+   ========================================================================== */
+
+:root {
+}
+
+/* ==========================================================================
+   2. Tag defaults
+   Only the overrides of Bootstrap's defaults for plain tags (body, headings,
+   links, ...).
+   ========================================================================== */
+
+/* ==========================================================================
+   3. App shell
+   The header, main area and nav that appear on every page.
+   ========================================================================== */
+
+.sidebar-nav {
+  margin-top: 20px;
+  padding: 0;
+  list-style: none;
+}
+
+/* ==========================================================================
+   4. Shared pieces
+   Our own styles used on two or more pages.
+   ========================================================================== */

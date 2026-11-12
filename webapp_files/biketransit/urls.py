@@ -8,7 +8,7 @@ in catalog/urls.py.
     /admin/         Django admin site
     /accounts/      Login, logout and password pages (Django's built-in auth)
     /bike-routes/   The Bike Transit app itself (catalog/urls.py)
-    /               Redirects to the Bike Transit home page
+    /               Landing page (catalog.views.landing)
 
 For more information on URL patterns see:
     https://docs.djangoproject.com/en/6.1/topics/http/urls/
@@ -20,9 +20,6 @@ from django.urls import path
 # Use include() to pull in other URLconfs (the catalog app, Django's auth)
 from django.urls import include
 
-# RedirectView sends the bare site URL on to the app's home page
-from django.views.generic import RedirectView
-
 # Use static() to add URL mapping to serve static files during development (only)
 from django.conf import settings
 from django.conf.urls.static import static
@@ -30,6 +27,7 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 
 from catalog.forms import StyledAuthenticationForm
+from catalog import views as catalog_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -53,11 +51,10 @@ urlpatterns += [
     path("bike-routes/", include("catalog.urls")),
 ]
 
-# Send visitors who open the bare domain to the Bike Transit home page.
-# pattern_name looks the URL up by name, so it keeps working if the prefix
-# above ever changes. permanent=False makes it a temporary (302) redirect.
+# Landing page for visitors who open the bare domain. It lives here rather
+# than in catalog/urls.py because "/" is outside the /bike-routes/ prefix.
 urlpatterns += [
-    path("", RedirectView.as_view(pattern_name="index", permanent=False)),
+    path("", catalog_views.landing, name="landing"),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

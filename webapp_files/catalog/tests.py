@@ -47,6 +47,7 @@ class UrlRoutingTests(TestCase):
     def test_url_names_reverse_to_expected_paths(self):
         r, loc = self.route.pk, self.start.pk
         expected = {
+            ("landing", ()): "/",
             ("index", ()): "/bike-routes/",
             ("route-list", ()): "/bike-routes/routes/",
             ("route-detail", (r,)): f"/bike-routes/routes/{r}/",
@@ -73,13 +74,16 @@ class UrlRoutingTests(TestCase):
             self.route.get_absolute_url(), f"/bike-routes/routes/{self.route.pk}/"
         )
 
-    def test_root_redirects_to_home(self):
+    def test_root_shows_landing_page(self):
         response = self.client.get("/")
-        self.assertRedirects(response, "/bike-routes/", fetch_redirect_response=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "landing.html")
+        self.assertContains(response, f'href="{reverse("index")}"')
 
     def test_public_pages_load(self):
         r, loc = self.route.pk, self.start.pk
         pages = [
+            ("landing", ()),
             ("index", ()),
             ("route-list", ()),
             ("route-detail", (r,)),
