@@ -89,10 +89,21 @@ Ideas from elsewhere that are **not** yet adopted (raise them when relevant, don
 
 ## URL scheme (decided 2026-11-07, rubric B80)
 
-- The app is mounted at `/bike-routes/` (the Python app folder stays `catalog`); `/` redirects there. Login/logout use Django's built-in auth at `/accounts/`.
+- The app is mounted at `/bike-routes/` (the Python app folder stays `catalog`). `/` is a landing page (`landing`, `landing.html`, wired in `biketransit/urls.py`) that links into the app; it replaced the old redirect on 2026-11-12. Login/logout use Django's built-in auth at `/accounts/`.
 - RESTful conventions: plural lowercase-hyphenated nouns, numeric `<int:pk>` ids (no slugs), sub-pages nested under their parent, trailing slashes. One URL for a form's GET and POST.
 - Current map (URL names in parentheses): `routes/` (`route-list`), `routes/<pk>/` (`route-detail`), `routes/<pk>/feedback/` (`feedback-form`), `routes/<pk>/feedback/thanks/` (`feedback-confirmation`), `routes/<pk>/complete/` (`post-ride-feedback-prompt`), `feedback/` (`feedback-route-selection`), `locations/` and `locations/<pk>/`, `map/`, `trips/new/` (`trip-new`), `profile/` (login required).
 - Always link with `{% url 'name' %}` / `reverse()` / `get_absolute_url`, never hard-coded paths. `UrlRoutingTests` in `catalog/tests.py` pins the paths; update it when adding a URL.
+
+## Styling / CSS (decided 2026-11-12)
+
+- **Mobile first.** Most riders will use a phone, so each page is designed and built for a phone (~375px wide) first. Desktop changes are added later in `@media (min-width: 48rem)` blocks.
+- **Bootstrap is used only where the team picks it.** It is loaded from a CDN in `base_generic.html`. Use only the Bootstrap components Kenzie links for a page; everything else is our own CSS.
+- **One page at a time.** For each page, Kenzie provides a drawing of the mobile layout and links to the Bootstrap components to use. Build that page to match, check it at mobile size, then review it before moving on. Don't style a page before its drawing arrives, and ask if the drawing is unclear.
+- **Files** (in `catalog/static/catalog/css/`):
+  - `main.css`: everything shared, in four commented sections: variables (colors, route-line colors, spacing, fonts), tag defaults, the app shell (header/main/nav), and shared pieces.
+  - `pages/<page>.css`: one per page, created when that page is styled.
+- A style starts in its page file. When a second page needs it, it moves to the shared-pieces section of `main.css`.
+- Load order in `base_generic.html`: Bootstrap, then `main.css`, then `{% block page_css %}`, so our CSS overrides Bootstrap. A page adds its file with `{% block page_css %}<link rel="stylesheet" href="{% static 'catalog/css/pages/<page>.css' %}">{% endblock %}` (the template needs `{% load static %}`). `{% block extra_head %}` stays for other head content, like the map page's MapLibre CSS.
 
 ## Git workflow
 
