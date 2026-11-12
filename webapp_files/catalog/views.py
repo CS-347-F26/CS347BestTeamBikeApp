@@ -10,6 +10,11 @@ from .models import User, Route, Location, RouteFeedback
 from .forms import ProfileForm, SignUpForm
 
 
+def landing(request):
+    """Landing page at the bare domain (/): a short intro with links into the app."""
+    return render(request, "landing.html")
+
+
 def index(request):
     """View function for home page of site."""
 

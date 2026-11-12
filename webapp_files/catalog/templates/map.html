@@ -1,6 +1,11 @@
 {% extends "base_generic.html" %}
+{% load static %}
 
 {% block title %}Map{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/map.css' %}">
+{% endblock %}
 
 {% block extra_head %}
   <link
