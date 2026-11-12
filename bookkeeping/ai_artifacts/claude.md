@@ -108,6 +108,7 @@ Ideas from elsewhere that are **not** yet adopted (raise them when relevant, don
 ## Git workflow
 
 - All four teammates work on the `development` branch for now.
+- Exception (2026-11-12): Kenzie's styling work lives on its own branch, `kenzie/styling` (tracks `origin/kenzie/styling`), and gets merged into `development` when a page is ready. A plain `git push` works on it.
 - Merge to `main` only once the team is confident in V1 (or V2).
 - Ownership of parts hasn't been decided yet.
 
