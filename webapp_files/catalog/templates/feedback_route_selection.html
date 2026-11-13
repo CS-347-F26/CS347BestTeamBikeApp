@@ -1,13 +1,83 @@
 {% extends "base_generic.html" %}
+{% load static %}
 
-{% block title %}Choose a Route{% endblock %}
+{% block title %}Feedback{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/route-rows.css' %}">
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/feedback.css' %}">
+{% endblock %}
 
 {% block content %}
-  <h1>Choose a Route to provide feedback on!</h1>
+  <header class="page-title-band">
+    <h1>Feedback</h1>
+    <p>Pick a route to tell us how it felt.</p>
+  </header>
 
-  <!-- Route list will go here -->
-
-  <p>
-    Each route will eventually link to its feedback form.
-  </p>
+  {# One row per route. The whole row is a link to that route's feedback form. #}
+  {# Colors come from the row's route-row--<color> class in route-rows.css. #}
+  <ul class="route-rows">
+    {% for route in route_list %}
+      <li class="route-row route-row--{{ route.color|lower }} feedback-row">
+        <a class="feedback-link" href="{% url 'feedback-form' route.pk %}">
+          <span class="visually-hidden">Give feedback on the </span>
+          <span class="feedback-name">{{ route.name }}</span>
+          <span class="visually-hidden"> route</span>
+          <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
+        </a>
+      </li>
+    {% empty %}
+      {# Example rows, shown only while the database has no routes. #}
+      {# Delete this block once real routes are added. Their links point at #}
+      {# route ids 1-6, which don't exist yet (they show the 404 page). #}
+      <li class="route-row route-row--red feedback-row">
+        <a class="feedback-link" href="{% url 'feedback-form' 1 %}">
+          <span class="visually-hidden">Give feedback on the </span>
+          <span class="feedback-name">Red</span>
+          <span class="visually-hidden"> route</span>
+          <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
+        </a>
+      </li>
+      <li class="route-row route-row--yellow feedback-row">
+        <a class="feedback-link" href="{% url 'feedback-form' 2 %}">
+          <span class="visually-hidden">Give feedback on the </span>
+          <span class="feedback-name">Yellow</span>
+          <span class="visually-hidden"> route</span>
+          <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
+        </a>
+      </li>
+      <li class="route-row route-row--black feedback-row">
+        <a class="feedback-link" href="{% url 'feedback-form' 3 %}">
+          <span class="visually-hidden">Give feedback on the </span>
+          <span class="feedback-name">Black</span>
+          <span class="visually-hidden"> route</span>
+          <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
+        </a>
+      </li>
+      <li class="route-row route-row--purple feedback-row">
+        <a class="feedback-link" href="{% url 'feedback-form' 4 %}">
+          <span class="visually-hidden">Give feedback on the </span>
+          <span class="feedback-name">Purple</span>
+          <span class="visually-hidden"> route</span>
+          <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
+        </a>
+      </li>
+      <li class="route-row route-row--blue feedback-row">
+        <a class="feedback-link" href="{% url 'feedback-form' 5 %}">
+          <span class="visually-hidden">Give feedback on the </span>
+          <span class="feedback-name">Blue</span>
+          <span class="visually-hidden"> route</span>
+          <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
+        </a>
+      </li>
+      <li class="route-row route-row--green feedback-row">
+        <a class="feedback-link" href="{% url 'feedback-form' 6 %}">
+          <span class="visually-hidden">Give feedback on the </span>
+          <span class="feedback-name">Green</span>
+          <span class="visually-hidden"> route</span>
+          <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
 {% endblock %}

@@ -4,16 +4,17 @@
 {% block title %}Routes{% endblock %}
 
 {% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/route-rows.css' %}">
   <link rel="stylesheet" href="{% static 'catalog/css/pages/routes.css' %}">
 {% endblock %}
 
 {% block content %}
-  <header class="routes-header">
+  <header class="page-title-band">
     <h1>Routes</h1>
   </header>
 
   {# One row per route: name | comfort rating | comments button. #}
-  {# The row's colors come from its route-row--<color> class in routes.css. #}
+  {# The row's colors come from its route-row--<color> class in route-rows.css. #}
   <ul class="route-rows">
     {% for route in route_list %}
       <li class="route-row route-row--{{ route.color|lower }}">

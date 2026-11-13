@@ -60,6 +60,7 @@ def feedback_route_selection(request):
     return render(
         request,
         "feedback_route_selection.html",
+        {"route_list": Route.objects.all()},
     )
 
 

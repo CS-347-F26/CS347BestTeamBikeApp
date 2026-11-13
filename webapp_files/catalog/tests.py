@@ -465,6 +465,30 @@ class RouteListPageTests(TestCase):
         self.assertEqual(html.count("Comfort rating"), 1)
 
 
+class FeedbackRouteSelectionPageTests(TestCase):
+    """The feedback page lists routes as rows that each link to that
+    route's feedback form, or example rows while there are no routes."""
+
+    def test_example_rows_when_no_routes(self):
+        html = self.client.get(reverse("feedback-route-selection")).content.decode()
+        for color in ("Red", "Yellow", "Black", "Purple", "Blue", "Green"):
+            self.assertIn(f'<span class="feedback-name">{color}</span>', html)
+        self.assertEqual(html.count('class="feedback-link"'), 6)
+
+    def test_real_route_links_to_its_feedback_form(self):
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        route = Route.objects.create(
+            name="Blue Line", color="Blue", start_location=start, end_location=end
+        )
+        html = self.client.get(reverse("feedback-route-selection")).content.decode()
+        self.assertIn('class="route-row route-row--blue feedback-row"', html)
+        self.assertIn(
+            f'href="{reverse("feedback-form", args=[route.pk])}"', html
+        )
+        self.assertEqual(html.count('class="feedback-link"'), 1)
+
+
 class WaypointModelTests(TestCase):
     """Waypoints keep a per-route order, and one waypoint can sit at a
     different index on each route it belongs to."""
