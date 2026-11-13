@@ -50,24 +50,15 @@ main {
   list-style: none;
 }
 
-/* One route row. Each color class below sets --row-bg (a light tint) and
-   --row-ink (a darker shade of the same color, used for the name). */
+/* One route row. Its colors come from a .route-color--<color> class in
+   main.css, which sets --route-bg (a light tint) and --route-ink (a darker
+   shade of the same color, used for the name). A color with no class gets a
+   white row with dark-teal text. */
 .route-row {
-  --row-bg: #fff;
-  --row-ink: var(--color-primary);
-  flex: 1;  /* share the leftover height equally */
+  flex: 1;  /* share the leftover height equally... */
   display: flex;
   min-height: 5.5rem;
-  background-color: var(--row-bg);
+  max-height: 8rem;  /* ...but never balloon when there are only a few routes */
+  background-color: var(--route-bg, #fff);
   border-bottom: 1px solid rgb(8 76 97 / 0.2);
 }
-
-/* Route colors. Name-on-row contrast: red 6.1, yellow 5.5, black 13.4,
-   purple 7.4, blue 6.6, green 5.4 (all pass 4.5:1). Add a class here when
-   a route uses a new color; its row is white until then. */
-.route-row--red    { --row-bg: #f8d7d5; --row-ink: #9b1c1c; }
-.route-row--yellow { --row-bg: #fbefb8; --row-ink: #7a5b00; }
-.route-row--black  { --row-bg: #d9d9d9; --row-ink: #111; }
-.route-row--purple { --row-bg: #e6daf5; --row-ink: #5b2a86; }
-.route-row--blue   { --row-bg: #d6e6fa; --row-ink: #1e4e8c; }
-.route-row--green  { --row-bg: #d7f0da; --row-ink: #1f6b2e; }

@@ -15,10 +15,10 @@
   </header>
 
   {# One row per route. The whole row is a link to that route's feedback form. #}
-  {# Colors come from the row's route-row--<color> class in route-rows.css. #}
+  {# Colors come from the row's route-color--<color> class in main.css. #}
   <ul class="route-rows">
     {% for route in route_list %}
-      <li class="route-row route-row--{{ route.color|lower }} feedback-row">
+      <li class="route-row route-color--{{ route.color|lower }} feedback-row">
         <a class="feedback-link" href="{% url 'feedback-form' route.pk %}">
           <span class="visually-hidden">Give feedback on the </span>
           <span class="feedback-name">{{ route.name }}</span>
@@ -30,7 +30,7 @@
       {# Example rows, shown only while the database has no routes. #}
       {# Delete this block once real routes are added. Their links point at #}
       {# route ids 1-6, which don't exist yet (they show the 404 page). #}
-      <li class="route-row route-row--red feedback-row">
+      <li class="route-row route-color--red feedback-row">
         <a class="feedback-link" href="{% url 'feedback-form' 1 %}">
           <span class="visually-hidden">Give feedback on the </span>
           <span class="feedback-name">Red</span>
@@ -38,7 +38,7 @@
           <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
         </a>
       </li>
-      <li class="route-row route-row--yellow feedback-row">
+      <li class="route-row route-color--yellow feedback-row">
         <a class="feedback-link" href="{% url 'feedback-form' 2 %}">
           <span class="visually-hidden">Give feedback on the </span>
           <span class="feedback-name">Yellow</span>
@@ -46,7 +46,7 @@
           <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
         </a>
       </li>
-      <li class="route-row route-row--black feedback-row">
+      <li class="route-row route-color--black feedback-row">
         <a class="feedback-link" href="{% url 'feedback-form' 3 %}">
           <span class="visually-hidden">Give feedback on the </span>
           <span class="feedback-name">Black</span>
@@ -54,7 +54,7 @@
           <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
         </a>
       </li>
-      <li class="route-row route-row--purple feedback-row">
+      <li class="route-row route-color--purple feedback-row">
         <a class="feedback-link" href="{% url 'feedback-form' 4 %}">
           <span class="visually-hidden">Give feedback on the </span>
           <span class="feedback-name">Purple</span>
@@ -62,7 +62,7 @@
           <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
         </a>
       </li>
-      <li class="route-row route-row--blue feedback-row">
+      <li class="route-row route-color--blue feedback-row">
         <a class="feedback-link" href="{% url 'feedback-form' 5 %}">
           <span class="visually-hidden">Give feedback on the </span>
           <span class="feedback-name">Blue</span>
@@ -70,7 +70,7 @@
           <span class="feedback-chevron" aria-hidden="true">&rsaquo;</span>
         </a>
       </li>
-      <li class="route-row route-row--green feedback-row">
+      <li class="route-row route-color--green feedback-row">
         <a class="feedback-link" href="{% url 'feedback-form' 6 %}">
           <span class="visually-hidden">Give feedback on the </span>
           <span class="feedback-name">Green</span>

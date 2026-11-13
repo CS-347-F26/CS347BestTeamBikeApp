@@ -13,7 +13,7 @@
 }
 
 .route-name {
-  color: var(--row-ink);
+  color: var(--route-ink, var(--color-primary));
   font-size: 1.85rem;
   font-weight: 700;
 }

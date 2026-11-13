@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Location, Route, RouteWaypoint, User, Waypoint
+from .models import Location, Route, RouteFeedback, RouteWaypoint, User, Waypoint
 
 
 class NotFoundPageTests(TestCase):
@@ -88,7 +88,6 @@ class UrlRoutingTests(TestCase):
             ("route-list", ()),
             ("route-detail", (r,)),
             ("feedback-route-selection", ()),
-            ("feedback-form", (r,)),
             ("feedback-confirmation", (r,)),
             ("post-ride-feedback-prompt", (r,)),
             ("location-list", ()),
@@ -103,6 +102,9 @@ class UrlRoutingTests(TestCase):
                 self.assertEqual(response.status_code, 200)
 
     def test_missing_ids_return_404(self):
+        # feedback-form needs a login before it looks the route up.
+        User.objects.create_user(username="checker", password="test-pass-123")
+        self.client.login(username="checker", password="test-pass-123")
         names = [
             "route-detail",
             "feedback-form",
@@ -459,7 +461,7 @@ class RouteListPageTests(TestCase):
             comfortability=4,
         )
         html = self.client.get(reverse("route-list")).content.decode()
-        self.assertIn('class="route-row route-row--red"', html)
+        self.assertIn('class="route-row route-color--red"', html)
         self.assertIn('<span class="route-name">Red Line</span>', html)
         self.assertIn(f'href="{route.get_absolute_url()}">Comments</a>', html)
         self.assertEqual(html.count("Comfort rating"), 1)
@@ -482,11 +484,72 @@ class FeedbackRouteSelectionPageTests(TestCase):
             name="Blue Line", color="Blue", start_location=start, end_location=end
         )
         html = self.client.get(reverse("feedback-route-selection")).content.decode()
-        self.assertIn('class="route-row route-row--blue feedback-row"', html)
+        self.assertIn('class="route-row route-color--blue feedback-row"', html)
         self.assertIn(
             f'href="{reverse("feedback-form", args=[route.pk])}"', html
         )
         self.assertEqual(html.count('class="feedback-link"'), 1)
+
+
+class FeedbackFormPageTests(TestCase):
+    """One route's feedback form: login required, saves a RouteFeedback,
+    then shows the thank-you popup."""
+
+    @classmethod
+    def setUpTestData(cls):
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        cls.route = Route.objects.create(
+            name="Red", color="Red", start_location=start, end_location=end
+        )
+        cls.user = User.objects.create_user(username="rider", password="test-pass-123")
+
+    def setUp(self):
+        self.url = reverse("feedback-form", args=[self.route.pk])
+
+    def test_requires_login(self):
+        response = self.client.get(self.url)
+        self.assertRedirects(
+            response, f"{reverse('login')}?next={self.url}", fetch_redirect_response=False
+        )
+
+    def test_form_shows_route_and_five_ratings(self):
+        self.client.login(username="rider", password="test-pass-123")
+        html = self.client.get(self.url).content.decode()
+        self.assertIn('<h1 class="ff-route-name">Red</h1>', html)
+        self.assertEqual(html.count('name="comfort_rating"'), 5)
+        self.assertIn('class="route-color--red feedback-form-page"', html)
+        self.assertNotIn(".show()", html)  # no popup before submitting
+
+    def test_valid_submit_saves_and_shows_thanks_once(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.post(
+            self.url, {"comfort_rating": "4", "text": "Wide bike lane on Main St."}
+        )
+        self.assertRedirects(response, self.url, fetch_redirect_response=False)
+        feedback = RouteFeedback.objects.get()
+        self.assertEqual(
+            (feedback.user, feedback.route, feedback.comfort_rating, feedback.text),
+            (self.user, self.route, 4, "Wide bike lane on Main St."),
+        )
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("Feedback received!", html)
+        self.assertIn(".show()", html)
+        # Reloading again doesn't reopen the popup.
+        self.assertNotIn(".show()", self.client.get(self.url).content.decode())
+
+    def test_missing_rating_shows_error(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.post(self.url, {"text": "No rating"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pick a comfort rating from 1 to 5.")
+        self.assertFalse(RouteFeedback.objects.exists())
+
+    def test_rating_out_of_range_is_rejected(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.post(self.url, {"comfort_rating": "6"})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(RouteFeedback.objects.exists())
 
 
 class WaypointModelTests(TestCase):

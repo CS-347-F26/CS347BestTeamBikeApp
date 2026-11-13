@@ -1,18 +1,80 @@
 {% extends "base_generic.html" %}
+{% load static %}
 
-{% block title %}Route Feedback{% endblock %}
+{% block title %}Feedback: {{ route.name }}{% endblock %}
+
+{# The whole page takes the route's light tint (route-color--<color> in main.css). #}
+{% block body_class %}route-color--{{ route.color|lower }} feedback-form-page{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/feedback-form.css' %}">
+{% endblock %}
 
 {% block content %}
-  <h1>Give Feedback</h1>
+  <header class="ff-header">
+    <p class="ff-kicker">Give feedback</p>
+    <h1 class="ff-route-name">{{ route.name }}</h1>
+  </header>
 
-  <p>Route: <a href="{{ route.get_absolute_url }}">{{ route.name }}</a></p>
-
-  <form method="post">
+  <form class="ff-card" method="post" novalidate>
     {% csrf_token %}
 
-    <!-- Comfort rating field will go here -->
-    <!-- Written feedback field will go here -->
+    {# Comfort rating: real radio buttons, styled as five tappable squares. #}
+    <fieldset class="ff-rating"{% if form.comfort_rating.errors %} aria-describedby="rating-error"{% endif %}>
+      <legend>{{ form.comfort_rating.label }}</legend>
+      <div class="ff-rating-options">
+        {% for radio in form.comfort_rating %}
+          {{ radio.tag }}
+          <label for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+        {% endfor %}
+      </div>
+      <div class="ff-rating-scale" aria-hidden="true">
+        <span>Very uncomfortable</span>
+        <span>Very comfortable</span>
+      </div>
+      <p class="visually-hidden">1 means very uncomfortable and 5 means very comfortable.</p>
+      {% for error in form.comfort_rating.errors %}
+        <div id="rating-error" class="ff-error">{{ error }}</div>
+      {% endfor %}
+    </fieldset>
 
-    <button type="submit">Submit Feedback</button>
+    <div class="ff-field">
+      <label for="{{ form.text.id_for_label }}">{{ form.text.label }}</label>
+      {{ form.text }}
+      {% for error in form.text.errors %}
+        <div class="ff-error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="ff-submit">Submit feedback</button>
   </form>
+
+  {# Thank-you popup (Bootstrap modal). It opens on load right after a successful submit. #}
+  <div class="modal fade" id="thanks-modal" tabindex="-1" aria-labelledby="thanks-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content ff-thanks">
+        <svg class="ff-smiley" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+          <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="3"/>
+          <circle cx="17" cy="19" r="2.5" fill="currentColor"/>
+          <circle cx="31" cy="19" r="2.5" fill="currentColor"/>
+          <path d="M15 29c2.5 4 5.5 6 9 6s6.5-2 9-6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <h2 id="thanks-title" class="ff-thanks-title">Feedback received!</h2>
+        <p>Thank you for your feedback.</p>
+        <div class="ff-thanks-actions">
+          <a class="ff-submit" href="{% url 'feedback-route-selection' %}">Back to routes</a>
+          <button type="button" class="ff-close" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if show_thanks %}
+    <script>
+      // Bootstrap's script loads at the end of the page, so wait for it.
+      window.addEventListener("DOMContentLoaded", function () {
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("thanks-modal")).show();
+      });
+    </script>
+  {% endif %}
 {% endblock %}

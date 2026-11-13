@@ -14,10 +14,10 @@
   </header>
 
   {# One row per route: name | comfort rating | comments button. #}
-  {# The row's colors come from its route-row--<color> class in route-rows.css. #}
+  {# The row's colors come from its route-color--<color> class in main.css. #}
   <ul class="route-rows">
     {% for route in route_list %}
-      <li class="route-row route-row--{{ route.color|lower }}">
+      <li class="route-row route-color--{{ route.color|lower }}">
         <span class="route-name">{{ route.name }}</span>
         <span class="route-comfort">
           <span class="route-comfort-label">Comfort rating</span>
@@ -29,7 +29,7 @@
       {# Example rows, shown only while the database has no routes. #}
       {# Delete this block once real routes are added. Their Comments links #}
       {# point at route ids 1-6, which don't exist yet (they show the 404 page). #}
-      <li class="route-row route-row--red">
+      <li class="route-row route-color--red">
         <span class="route-name">Red</span>
         <span class="route-comfort">
           <span class="route-comfort-label">Comfort rating</span>
@@ -37,7 +37,7 @@
         </span>
         <a class="route-comments" href="{% url 'route-detail' 1 %}">Comments</a>
       </li>
-      <li class="route-row route-row--yellow">
+      <li class="route-row route-color--yellow">
         <span class="route-name">Yellow</span>
         <span class="route-comfort">
           <span class="route-comfort-label">Comfort rating</span>
@@ -45,7 +45,7 @@
         </span>
         <a class="route-comments" href="{% url 'route-detail' 2 %}">Comments</a>
       </li>
-      <li class="route-row route-row--black">
+      <li class="route-row route-color--black">
         <span class="route-name">Black</span>
         <span class="route-comfort">
           <span class="route-comfort-label">Comfort rating</span>
@@ -53,7 +53,7 @@
         </span>
         <a class="route-comments" href="{% url 'route-detail' 3 %}">Comments</a>
       </li>
-      <li class="route-row route-row--purple">
+      <li class="route-row route-color--purple">
         <span class="route-name">Purple</span>
         <span class="route-comfort">
           <span class="route-comfort-label">Comfort rating</span>
@@ -61,7 +61,7 @@
         </span>
         <a class="route-comments" href="{% url 'route-detail' 4 %}">Comments</a>
       </li>
-      <li class="route-row route-row--blue">
+      <li class="route-row route-color--blue">
         <span class="route-name">Blue</span>
         <span class="route-comfort">
           <span class="route-comfort-label">Comfort rating</span>
@@ -69,7 +69,7 @@
         </span>
         <a class="route-comments" href="{% url 'route-detail' 5 %}">Comments</a>
       </li>
-      <li class="route-row route-row--green">
+      <li class="route-row route-color--green">
         <span class="route-name">Green</span>
         <span class="route-comfort">
           <span class="route-comfort-label">Comfort rating</span>

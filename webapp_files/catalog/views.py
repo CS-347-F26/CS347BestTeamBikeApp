@@ -7,7 +7,7 @@ from django.views import generic
 from django.contrib import messages
 
 from .models import User, Route, Location, RouteFeedback
-from .forms import ProfileForm, SignUpForm
+from .forms import ProfileForm, RouteFeedbackForm, SignUpForm
 
 
 def landing(request):
@@ -64,14 +64,30 @@ def feedback_route_selection(request):
     )
 
 
+@login_required
 def feedback_form(request, pk):
-    """Display the feedback form for a selected route (GET); the same URL
-    will accept the submitted form (POST) once the form is built."""
+    """Feedback form for one route. GET shows the form; POST saves it.
+
+    After a successful save we redirect back to this same page (so a refresh
+    can't submit twice) and leave a one-time note in the session, which the
+    next GET turns into the "thank you" popup."""
     route = get_object_or_404(Route, pk=pk)
+    if request.method == "POST":
+        form = RouteFeedbackForm(request.POST)
+        if form.is_valid():
+            feedback = form.save(commit=False)
+            feedback.user = request.user
+            feedback.route = route
+            feedback.save()
+            request.session["feedback_submitted"] = route.pk
+            return redirect("feedback-form", pk=route.pk)
+    else:
+        form = RouteFeedbackForm()
+    show_thanks = request.session.pop("feedback_submitted", None) == route.pk
     return render(
         request,
         "feedback_form.html",
-        {"route": route},
+        {"route": route, "form": form, "show_thanks": show_thanks},
     )
 
 
