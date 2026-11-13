@@ -1,0 +1,54 @@
+/* landing.css: styles for the landing page (landing.html). Mobile first. */
+
+/* Center the "BikeWay" block in the space between the top bar and the
+   bottom tab bar. The page becomes a column at least one screen tall
+   (100svh: the visible height on phones, even with the browser's toolbars
+   showing), <main> stretches to fill what the top bar leaves, and the hero
+   fills <main> and centers its text up and down. body already has bottom
+   padding for the tab bar, and Bootstrap's border-box sizing counts that
+   padding inside the 100svh. */
+body {
+  /* Pale sage. Dark teal text on it is 7.1:1. */
+  background-color: #d1e2df;
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.hero-title {
+  margin-bottom: 0.25rem;
+  color: var(--color-primary);
+  font-size: clamp(3.5rem, 18vw, 6rem);  /* big on phones, capped on wide screens */
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.hero-tagline {
+  margin-bottom: 1.5rem;
+  color: var(--color-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.hero-intro {
+  max-width: 34rem;  /* keeps lines a comfortable length on wider screens */
+  margin: 0 auto;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
