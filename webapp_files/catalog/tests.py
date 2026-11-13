@@ -464,7 +464,10 @@ class RouteListPageTests(TestCase):
         start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
         end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
         route = Route.objects.create(
-            name="Red Line", color="Red", start_location=start, end_location=end,
+            name="Red Line",
+            color="Red",
+            start_location=start,
+            end_location=end,
             comfortability=4,
         )
         html = self.client.get(reverse("route-list")).content.decode()
@@ -492,9 +495,7 @@ class FeedbackRouteSelectionPageTests(TestCase):
         )
         html = self.client.get(reverse("feedback-route-selection")).content.decode()
         self.assertIn('class="route-row route-color--blue feedback-row"', html)
-        self.assertIn(
-            f'href="{reverse("feedback-form", args=[route.pk])}"', html
-        )
+        self.assertIn(f'href="{reverse("feedback-form", args=[route.pk])}"', html)
         self.assertEqual(html.count('class="feedback-link"'), 1)
 
 
@@ -517,7 +518,9 @@ class FeedbackFormPageTests(TestCase):
     def test_requires_login(self):
         response = self.client.get(self.url)
         self.assertRedirects(
-            response, f"{reverse('login')}?next={self.url}", fetch_redirect_response=False
+            response,
+            f"{reverse('login')}?next={self.url}",
+            fetch_redirect_response=False,
         )
 
     def test_form_shows_route_and_five_ratings(self):

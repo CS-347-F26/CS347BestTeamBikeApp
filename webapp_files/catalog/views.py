@@ -187,7 +187,9 @@ def profile(request):
         request,
         "profile.html",
         {
-            "recent_feedback": feedback[:3],  # newest first (RouteFeedback.Meta.ordering)
+            "recent_feedback": feedback[
+                :3
+            ],  # newest first (RouteFeedback.Meta.ordering)
             "feedback_count": feedback.count(),
         },
     )
