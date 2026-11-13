@@ -14,12 +14,12 @@ assert (
 from django.urls import path
 from . import views
 
-# Every path below is mounted under /bike-routes/ (see biketransit/urls.py).
+# These paths are mounted at the domain root (see biketransit/urls.py).
 # Conventions: plural nouns for collections (routes/, locations/), <int:pk>
 # for one object, and pages that belong to a route nested under that route.
 urlpatterns = [
-    # Home page: /bike-routes/
-    path("", views.index, name="index"),
+    # App home: /home/
+    path("home/", views.index, name="index"),
 ]
 
 # Routes (the color-coded bike lines): list and detail

@@ -2,7 +2,7 @@
 https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html
 
 ## Prod Website
-https://finalproject.theworksofdorianc.me/bike-routes/
+https://finalproject.theworksofdorianc.me/
 
 ## Stew Notes:
 * Right now, if one were to map a bike ride in Google Maps, it just goes for the most efficient

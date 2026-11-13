@@ -39,14 +39,14 @@ def index(request):
 
 
 class RouteListView(generic.ListView):
-    """List all routes: /bike-routes/routes/"""
+    """List all routes: /routes/"""
 
     model = Route
     template_name = "route_selection.html"
 
 
 class RouteDetailView(generic.DetailView):
-    """One route: /bike-routes/routes/<pk>/"""
+    """One route: /routes/<pk>/"""
 
     model = Route
     template_name = "route_detail.html"
@@ -100,14 +100,14 @@ def feedback_confirmation(request, pk):
 
 
 class LocationListView(generic.ListView):
-    """List all locations (stations / transfer points): /bike-routes/locations/"""
+    """List all locations (stations / transfer points): /locations/"""
 
     model = Location
     template_name = "location_list.html"
 
 
 class LocationDetailView(generic.DetailView):
-    """One location: /bike-routes/locations/<pk>/"""
+    """One location: /locations/<pk>/"""
 
     model = Location
     template_name = "location_detail.html"

@@ -48,21 +48,21 @@ class UrlRoutingTests(TestCase):
         r, loc = self.route.pk, self.start.pk
         expected = {
             ("landing", ()): "/",
-            ("index", ()): "/bike-routes/",
-            ("route-list", ()): "/bike-routes/routes/",
-            ("route-detail", (r,)): f"/bike-routes/routes/{r}/",
-            ("feedback-route-selection", ()): "/bike-routes/feedback/",
-            ("feedback-form", (r,)): f"/bike-routes/routes/{r}/feedback/",
+            ("index", ()): "/home/",
+            ("route-list", ()): "/routes/",
+            ("route-detail", (r,)): f"/routes/{r}/",
+            ("feedback-route-selection", ()): "/feedback/",
+            ("feedback-form", (r,)): f"/routes/{r}/feedback/",
             (
                 "feedback-confirmation",
                 (r,),
-            ): f"/bike-routes/routes/{r}/feedback/thanks/",
-            ("post-ride-feedback-prompt", (r,)): f"/bike-routes/routes/{r}/complete/",
-            ("location-list", ()): "/bike-routes/locations/",
-            ("location-detail", (loc,)): f"/bike-routes/locations/{loc}/",
-            ("map", ()): "/bike-routes/map/",
-            ("trip-new", ()): "/bike-routes/trips/new/",
-            ("profile", ()): "/bike-routes/profile/",
+            ): f"/routes/{r}/feedback/thanks/",
+            ("post-ride-feedback-prompt", (r,)): f"/routes/{r}/complete/",
+            ("location-list", ()): "/locations/",
+            ("location-detail", (loc,)): f"/locations/{loc}/",
+            ("map", ()): "/map/",
+            ("trip-new", ()): "/trips/new/",
+            ("profile", ()): "/profile/",
             ("login", ()): "/accounts/login/",
         }
         for (name, args), path in expected.items():
@@ -71,14 +71,14 @@ class UrlRoutingTests(TestCase):
 
     def test_route_get_absolute_url(self):
         self.assertEqual(
-            self.route.get_absolute_url(), f"/bike-routes/routes/{self.route.pk}/"
+            self.route.get_absolute_url(), f"/routes/{self.route.pk}/"
         )
 
     def test_root_shows_landing_page(self):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "landing.html")
-        self.assertContains(response, f'href="{reverse("index")}"')
+        self.assertContains(response, f'href="{reverse("landing")}">Home</a>')
 
     def test_public_pages_load(self):
         r, loc = self.route.pk, self.start.pk
@@ -115,15 +115,17 @@ class UrlRoutingTests(TestCase):
                 response = self.client.get(reverse(name, args=[self.missing_pk]))
                 self.assertEqual(response.status_code, 404)
 
-    def test_old_catalog_prefix_is_gone(self):
-        response = self.client.get("/catalog/routes/")
-        self.assertEqual(response.status_code, 404)
+    def test_old_url_prefixes_are_gone(self):
+        for path in ("/catalog/routes/", "/bike-routes/", "/bike-routes/map/"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 404)
 
     def test_profile_requires_login(self):
         response = self.client.get(reverse("profile"))
         self.assertRedirects(
             response,
-            "/accounts/login/?next=/bike-routes/profile/",
+            "/accounts/login/?next=/profile/",
             fetch_redirect_response=False,
         )
 
@@ -315,7 +317,7 @@ class ProfileEditTests(TestCase):
         response = self.client.get(self.url)
         self.assertRedirects(
             response,
-            "/accounts/login/?next=/bike-routes/profile/edit/",
+            "/accounts/login/?next=/profile/edit/",
             fetch_redirect_response=False,
         )
 
@@ -341,7 +343,7 @@ class ProfileDeleteTests(TestCase):
         response = self.client.get(self.url)
         self.assertRedirects(
             response,
-            "/accounts/login/?next=/bike-routes/profile/delete/",
+            "/accounts/login/?next=/profile/delete/",
             fetch_redirect_response=False,
         )
 

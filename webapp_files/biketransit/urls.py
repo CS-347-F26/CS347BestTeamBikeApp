@@ -7,8 +7,8 @@ in catalog/urls.py.
 
     /admin/         Django admin site
     /accounts/      Login, logout and password pages (Django's built-in auth)
-    /bike-routes/   The Bike Transit app itself (catalog/urls.py)
-    /               Landing page (catalog.views.landing)
+    /               Landing page and root-level Bike Transit URLs
+    /home/          Bike Transit app home (catalog.views.index)
 
 For more information on URL patterns see:
     https://docs.djangoproject.com/en/6.1/topics/http/urls/
@@ -45,14 +45,14 @@ urlpatterns += [
     path("accounts/", include("django.contrib.auth.urls")),
 ]
 
-# All Bike Transit pages (routes, feedback, locations, map, trips, profile).
-# The Python app is still called "catalog"; only the URL prefix is "bike-routes".
+# Bike Transit pages live at the domain root. The app home uses /home/ so /
+# can continue to serve the landing page.
 urlpatterns += [
-    path("bike-routes/", include("catalog.urls")),
+    path("", include("catalog.urls")),
 ]
 
-# Landing page for visitors who open the bare domain. It lives here rather
-# than in catalog/urls.py because "/" is outside the /bike-routes/ prefix.
+# Landing page for visitors who open the bare domain. catalog/urls.py does
+# not define an empty path, so this remains the root page.
 urlpatterns += [
     path("", catalog_views.landing, name="landing"),
 ]
