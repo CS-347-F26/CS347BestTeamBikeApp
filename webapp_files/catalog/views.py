@@ -182,7 +182,15 @@ def trip_new(request):
 @login_required
 def profile(request):
     """The logged-in rider's profile. Anonymous visitors are sent to login."""
-    return render(request, "profile.html")
+    feedback = request.user.route_feedback.select_related("route")
+    return render(
+        request,
+        "profile.html",
+        {
+            "recent_feedback": feedback[:3],  # newest first (RouteFeedback.Meta.ordering)
+            "feedback_count": feedback.count(),
+        },
+    )
 
 
 @login_required

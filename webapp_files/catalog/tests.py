@@ -279,6 +279,13 @@ class ProfileEditTests(TestCase):
         self.assertEqual(self.user.username, "biker_24")
         self.assertEqual(self.user.comfortability, 3)
 
+    def test_edit_page_uses_card_layout(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.get(self.url)
+        self.assertContains(response, 'class="auth-card"')
+        self.assertContains(response, "Save changes")
+        self.assertContains(response, f'href="{reverse("profile")}">Cancel</a>')
+
 
 class ProfileDeleteTests(TestCase):
     def setUp(self):
@@ -550,6 +557,88 @@ class FeedbackFormPageTests(TestCase):
         response = self.client.post(self.url, {"comfort_rating": "6"})
         self.assertEqual(response.status_code, 200)
         self.assertFalse(RouteFeedback.objects.exists())
+
+
+class ProfilePageTests(TestCase):
+    """The profile shows who you are, three stats, and your routes and
+    feedback, with helpful empty states."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="rider", password="test-pass-123")
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        cls.route = Route.objects.create(
+            name="Red", color="Red", start_location=start, end_location=end
+        )
+
+    def setUp(self):
+        self.client.login(username="rider", password="test-pass-123")
+
+    def test_header_and_stats(self):
+        html = self.client.get(reverse("profile")).content.decode()
+        self.assertIn('<h1 id="pf-name" class="pf-name">rider</h1>', html)
+        self.assertIn("Member since", html)
+        for label in ("Comfort level", "Feedback given", "Saved routes"):
+            self.assertIn(f"<dt>{label}</dt>", html)
+        self.assertIn("<dd>Not set</dd>", html)  # comfortability defaults to 0
+
+    def test_empty_states(self):
+        html = self.client.get(reverse("profile")).content.decode()
+        self.assertIn("No saved routes yet.", html)
+        self.assertIn("You haven't given feedback yet.", html)
+        self.assertIn("No rides yet.", html)
+        self.assertIn("No marked locations yet.", html)
+
+    def test_saved_route_and_feedback_show(self):
+        self.user.saved_routes.add(self.route)
+        RouteFeedback.objects.create(
+            user=self.user, route=self.route, comfort_rating=4, text="Smooth ride"
+        )
+        html = self.client.get(reverse("profile")).content.decode()
+        self.assertIn('class="pf-row route-color--red"', html)
+        self.assertIn("<dt>Feedback given</dt>\n          <dd>1</dd>", html)
+        self.assertIn("Comfort 4/5", html)
+        self.assertIn("Smooth ride", html)
+        self.assertNotIn("No saved routes yet.", html)
+
+
+class PasswordChangePageTests(TestCase):
+    """Change password uses our card-style templates, not Django's admin look."""
+
+    def setUp(self):
+        User.objects.create_user(username="rider", password="test-pass-123")
+        self.client.login(username="rider", password="test-pass-123")
+
+    def test_form_page_uses_our_template(self):
+        response = self.client.get(reverse("password_change"))
+        self.assertTemplateUsed(response, "registration/password_change_form.html")
+        self.assertContains(response, 'class="auth-card"')
+        self.assertContains(response, 'class="password-toggle"', count=3)
+
+    def test_change_then_done_page(self):
+        response = self.client.post(
+            reverse("password_change"),
+            {
+                "old_password": "test-pass-123",
+                "new_password1": "Gr33nway-Loop-77",
+                "new_password2": "Gr33nway-Loop-77",
+            },
+            follow=True,
+        )
+        self.assertTemplateUsed(response, "registration/password_change_done.html")
+        self.assertContains(response, "Password changed")
+
+    def test_wrong_old_password_shows_field_error(self):
+        response = self.client.post(
+            reverse("password_change"),
+            {
+                "old_password": "wrong",
+                "new_password1": "Gr33nway-Loop-77",
+                "new_password2": "Gr33nway-Loop-77",
+            },
+        )
+        self.assertContains(response, 'class="auth-field-error"')
 
 
 class WaypointModelTests(TestCase):

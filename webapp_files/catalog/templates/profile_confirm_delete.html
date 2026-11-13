@@ -1,19 +1,26 @@
 {% extends "base_generic.html" %}
+{% load static %}
 
-{% block title %}Delete Account{% endblock %}
+{% block title %}Delete account{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/auth.css' %}">
+{% endblock %}
 
 {% block content %}
-  <h1>Delete Your Account?</h1>
+  <section class="auth-card" aria-labelledby="delete-title">
+    <h1 id="delete-title" class="auth-title">Delete your account?</h1>
 
-  <p>
-    Are you sure you want to delete the account
-    <strong>{{ user.username }}</strong>? This can't be undone. Your saved
-    routes, previous routes and marked locations will be removed.
-  </p>
+    <p class="auth-warning">
+      Are you sure you want to delete the account <strong>{{ user.username }}</strong>?
+      This can't be undone. Your saved routes, previous routes and marked
+      locations will be removed.
+    </p>
 
-  <form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">Yes, delete my account</button>
-    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">Cancel</a>
-  </form>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="auth-submit auth-submit--danger">Yes, delete my account</button>
+      <a class="auth-secondary" href="{% url 'profile' %}">Cancel</a>
+    </form>
+  </section>
 {% endblock %}

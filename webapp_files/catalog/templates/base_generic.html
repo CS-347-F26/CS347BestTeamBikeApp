@@ -61,7 +61,7 @@
                         </li>
                         {% if user.is_authenticated %}
                         <li class="nav-item">
-                            {% if name == 'profile' or name == 'profile-edit' or name == 'profile-delete' %}<a class="nav-link active" aria-current="page"{% else %}<a class="nav-link"{% endif %} href="{% url 'profile' %}">Profile</a>
+                            {% if name == 'profile' or name == 'profile-edit' or name == 'profile-delete' or name == 'password_change' or name == 'password_change_done' %}<a class="nav-link active" aria-current="page"{% else %}<a class="nav-link"{% endif %} href="{% url 'profile' %}">Profile</a>
                         </li>
                         <li class="nav-item">
                             <form method="post" action="{% url 'logout' %}">
@@ -109,7 +109,7 @@
             </li>
             <li>
                 {% if user.is_authenticated %}
-                {% if name == 'profile' or name == 'profile-edit' or name == 'profile-delete' %}<a class="tab-bar-link active" aria-current="page"{% else %}<a class="tab-bar-link"{% endif %} href="{% url 'profile' %}">
+                {% if name == 'profile' or name == 'profile-edit' or name == 'profile-delete' or name == 'password_change' or name == 'password_change_done' %}<a class="tab-bar-link active" aria-current="page"{% else %}<a class="tab-bar-link"{% endif %} href="{% url 'profile' %}">
                     {% include "icons/login.svg" %}<span>Profile</span></a>
                 {% else %}
                 {% url 'login' as login_url %}

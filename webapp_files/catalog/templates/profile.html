@@ -1,45 +1,126 @@
 {% extends "base_generic.html" %}
+{% load static %}
 
-{% block title %}Your Profile{% endblock %}
+{% block title %}Your profile{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/profile.css' %}">
+{% endblock %}
 
 {% block content %}
-  <h1>{{ user.username }}</h1>
+  <div class="profile">
 
-  <p><strong>Comfortability:</strong> {{ user.comfortability }}</p>
-  <p><strong>Member since:</strong> {{ user.date_joined|date:"M j, Y" }}</p>
+    {# --- Who you are, plus three quick numbers ------------------------ #}
+    <section class="pf-card pf-header" aria-labelledby="pf-name">
+      <div class="pf-avatar" aria-hidden="true">{{ user.username|first|upper }}</div>
+      <h1 id="pf-name" class="pf-name">{{ user.username }}</h1>
+      <p class="pf-since">Member since {{ user.date_joined|date:"M Y" }}</p>
 
-  <h2>Marked locations</h2>
-  <ul>
-    {% for location in user.marked_locations.all %}
-      <li><a href="{% url 'location-detail' location.pk %}">{{ location.name }}</a></li>
-    {% empty %}
-      <li>No marked locations yet.</li>
-    {% endfor %}
-  </ul>
+      <dl class="pf-stats">
+        <div class="pf-stat">
+          <dt>Comfort level</dt>
+          <dd>{% if user.comfortability %}{{ user.comfortability }}/5{% else %}Not set{% endif %}</dd>
+        </div>
+        <div class="pf-stat">
+          <dt>Feedback given</dt>
+          <dd>{{ feedback_count }}</dd>
+        </div>
+        <div class="pf-stat">
+          <dt>Saved routes</dt>
+          <dd>{{ user.saved_routes.count }}</dd>
+        </div>
+      </dl>
+    </section>
 
-  <h2>Saved routes</h2>
-  <ul>
-    {% for route in user.saved_routes.all %}
-      <li><a href="{{ route.get_absolute_url }}">{{ route.name }}</a></li>
-    {% empty %}
-      <li>No saved routes yet.</li>
-    {% endfor %}
-  </ul>
+    {# --- Saved routes, in their own colors --------------------------- #}
+    <section class="pf-card" aria-labelledby="pf-saved">
+      <h2 id="pf-saved" class="pf-title">Saved routes</h2>
+      {% with routes=user.saved_routes.all %}
+        {% if routes %}
+          <ul class="pf-list">
+            {% for route in routes %}
+              <li>
+                <a class="pf-row route-color--{{ route.color|lower }}" href="{{ route.get_absolute_url }}">
+                  {{ route.name }}<span class="pf-chevron" aria-hidden="true">&rsaquo;</span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="pf-empty">No saved routes yet. <a href="{% url 'route-list' %}">Browse routes</a></p>
+        {% endif %}
+      {% endwith %}
+    </section>
 
-  <h2>Previous routes</h2>
-  <ul>
-    {% for route in user.prev_routes.all %}
-      <li><a href="{{ route.get_absolute_url }}">{{ route.name }}</a></li>
-    {% empty %}
-      <li>No previous routes yet.</li>
-    {% endfor %}
-  </ul>
+    {# --- Latest feedback this rider left ----------------------------- #}
+    <section class="pf-card" aria-labelledby="pf-feedback">
+      <h2 id="pf-feedback" class="pf-title">Your recent feedback</h2>
+      {% if recent_feedback %}
+        <ul class="pf-list">
+          {% for item in recent_feedback %}
+            <li class="pf-feedback route-color--{{ item.route.color|lower }}">
+              <p class="pf-feedback-head">
+                <span class="pf-feedback-route">{{ item.route.name }}</span>
+                &middot; Comfort {{ item.comfort_rating }}/5
+                &middot; <time datetime="{{ item.created_at|date:'c' }}">{{ item.created_at|date:"M j" }}</time>
+              </p>
+              {% if item.text %}
+                <p class="pf-feedback-text">&ldquo;{{ item.text|truncatechars:80 }}&rdquo;</p>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="pf-empty">You haven't given feedback yet. <a href="{% url 'feedback-route-selection' %}">Give feedback</a></p>
+      {% endif %}
+    </section>
 
-    <a href="{% url 'profile-edit' %}" class="btn btn-primary">Edit profile</a>
-  <a href="{% url 'password_change' %}" class="btn btn-outline-secondary">
-    Change password
-  </a>
-  <a href="{% url 'profile-delete' %}" class="btn btn-outline-danger">
-  Delete account
-  </a>
+    {# --- Previous rides ---------------------------------------------- #}
+    <section class="pf-card" aria-labelledby="pf-previous">
+      <h2 id="pf-previous" class="pf-title">Previous rides</h2>
+      {% with routes=user.prev_routes.all %}
+        {% if routes %}
+          <ul class="pf-list">
+            {% for route in routes %}
+              <li>
+                <a class="pf-row route-color--{{ route.color|lower }}" href="{{ route.get_absolute_url }}">
+                  {{ route.name }}<span class="pf-chevron" aria-hidden="true">&rsaquo;</span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="pf-empty">No rides yet.</p>
+        {% endif %}
+      {% endwith %}
+    </section>
+
+    {# --- Marked locations -------------------------------------------- #}
+    <section class="pf-card" aria-labelledby="pf-marked">
+      <h2 id="pf-marked" class="pf-title">Marked locations</h2>
+      {% with locations=user.marked_locations.all %}
+        {% if locations %}
+          <ul class="pf-list">
+            {% for location in locations %}
+              <li>
+                <a class="pf-row" href="{% url 'location-detail' location.pk %}">
+                  {{ location.name }}<span class="pf-chevron" aria-hidden="true">&rsaquo;</span>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="pf-empty">No marked locations yet.</p>
+        {% endif %}
+      {% endwith %}
+    </section>
+
+    {# --- Account actions; delete sits apart on purpose --------------- #}
+    <section class="pf-card pf-actions" aria-label="Account">
+      <a class="pf-btn pf-btn--primary" href="{% url 'profile-edit' %}">Edit profile</a>
+      <a class="pf-btn pf-btn--outline" href="{% url 'password_change' %}">Change password</a>
+    </section>
+
+    <p class="pf-delete"><a href="{% url 'profile-delete' %}">Delete account</a></p>
+  </div>
 {% endblock %}
