@@ -1,5 +1,10 @@
 /* map.css: styles for the map page (map.html). Mobile first. */
 
+/* The title and description above the map. */
+.map-intro {
+  text-align: center;
+}
+
 #bike-map {
   height: 60vh;
   min-height: 320px;

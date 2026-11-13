@@ -16,6 +16,27 @@
    ========================================================================== */
 
 :root {
+  /* The app palette. Use the role names below in rules, not these directly,
+     so a color can be swapped in one place. */
+  --color-dark-teal: #084c61;
+  --color-slate: #4f6d7a;
+  --color-yellow: #e3b505;
+  --color-light-teal: #56a3a6;
+  --color-red: #db504a;
+  --color-pale-sage: #d1e2df;
+
+  /* Roles. Contrast notes are against white unless noted. */
+  --color-primary: var(--color-dark-teal);   /* header, tab bar, main buttons, headings; white text OK (9.5:1) */
+  --color-secondary: var(--color-slate);     /* secondary buttons, muted text, borders; 4.1:1 on the page background, so use it for bold/large text only */
+  --color-accent: var(--color-yellow);       /* active tab, selected states, highlights; never as text on white (1.9:1), use dark text on it */
+  --color-positive: var(--color-light-teal); /* success, "comfortable" ratings, hover; use dark text on it (white is 2.9:1) */
+  --color-danger: var(--color-red);          /* errors, delete, "unsafe"; white text only when bold/large (4.0:1) */
+  --color-background: var(--color-pale-sage);   /* dark teal text on it: 7.1:1 */
+  --color-text: var(--color-dark-teal);
+
+  /* Bootstrap reads these for the page background and text color. */
+  --bs-body-bg: var(--color-background);
+  --bs-body-color: var(--color-text);
 }
 
 /* ==========================================================================
@@ -29,13 +50,122 @@
    The header, main area and nav that appear on every page.
    ========================================================================== */
 
-.sidebar-nav {
-  margin-top: 20px;
+/* Top bar: dark teal, with the hamburger on the left. */
+.app-header {
+  background-color: var(--color-primary);
+}
+
+.app-header .navbar-brand {
+  font-weight: 700;
+}
+
+/* The slide-in menu panel (Bootstrap offcanvas), dark teal like the bar.
+   It covers most of a phone screen but leaves a strip of page showing. */
+.app-menu {
+  --bs-offcanvas-width: min(80vw, 20rem);
+  --bs-offcanvas-bg: var(--color-primary);
+  --bs-offcanvas-color: #fff;
+}
+
+/* The menu links: Bootstrap vertical pills, recolored for the dark panel.
+   These --bs-* variables are the knobs Bootstrap's .nav reads. */
+.app-header .nav-pills {
+  --bs-nav-link-color: #fff;
+  --bs-nav-link-hover-color: var(--color-accent);
+  --bs-nav-pills-link-active-bg: var(--color-accent);
+  --bs-nav-pills-link-active-color: var(--color-primary);  /* dark teal on yellow: 4.9:1 */
+}
+
+.app-header .nav-link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;  /* comfortable tap target */
+  width: 100%;       /* also makes the "Log out" button fill the row */
+  text-align: left;
+}
+
+.app-header .nav-link.active {
+  font-weight: 600;
+}
+
+/* Bottom tab bar, fixed to the bottom of the screen. */
+:root {
+  --tab-bar-height: 3.75rem;
+}
+
+/* Leave room at the end of every page so the bar never covers content.
+   env(safe-area-inset-bottom) is the iPhone home-indicator strip (0 elsewhere). */
+body {
+  padding-bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom));
+}
+
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1030;  /* above the page, below the slide-in menu (1045) */
+  padding-bottom: env(safe-area-inset-bottom);
+  background-color: var(--color-primary);
+  border-top: 1px solid rgb(255 255 255 / 0.15);
+}
+
+.tab-bar ul {
+  display: flex;
+  margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.tab-bar li {
+  flex: 1;  /* four equal columns */
+}
+
+.tab-bar-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  height: var(--tab-bar-height);
+  color: #fff;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.tab-bar-link:hover,
+.tab-bar-link.active {
+  color: var(--color-accent);  /* yellow on dark teal: 4.9:1 */
+}
+
+.tab-bar-link.active {
+  font-weight: 600;
+}
+
+.tab-bar .icon {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 /* ==========================================================================
    4. Shared pieces
    Our own styles used on two or more pages.
    ========================================================================== */
+
+/* Route colors, used by the routes, feedback and feedback-form pages.
+   Put route-color--<route.color|lower> on an element and it gets
+   --route-bg (a light tint for backgrounds) and --route-ink (a darker
+   shade of the same color, for the route name). Name-on-tint contrast:
+   red 6.1, yellow 5.5, black 13.4, purple 7.4, blue 6.6, green 5.4 (all
+   pass 4.5:1). To support a new route color, add one line here. */
+.route-color--red    { --route-bg: #f8d7d5; --route-ink: #9b1c1c; }
+.route-color--yellow { --route-bg: #fbefb8; --route-ink: #7a5b00; }
+.route-color--black  { --route-bg: #d9d9d9; --route-ink: #111; }
+.route-color--purple { --route-bg: #e6daf5; --route-ink: #5b2a86; }
+.route-color--blue   { --route-bg: #d6e6fa; --route-ink: #1e4e8c; }
+.route-color--green  { --route-bg: #d7f0da; --route-ink: #1f6b2e; }
+/* Colors used by the official Harrisonburg routes (orange 5.1, pink 6.0,
+   maroon 8.4 name-on-tint contrast). */
+.route-color--orange { --route-bg: #fde3cc; --route-ink: #9a4a00; }
+.route-color--pink   { --route-bg: #fbdbe9; --route-ink: #9d1d5a; }
+.route-color--maroon { --route-bg: #ecd6da; --route-ink: #6b1a2a; }

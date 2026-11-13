@@ -7,7 +7,15 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import AuditEvent, Location, Route, RouteWaypoint, User, Waypoint
+from .models import (
+    AuditEvent,
+    Location,
+    Route,
+    RouteFeedback,
+    RouteWaypoint,
+    User,
+    Waypoint,
+)
 from .log_formatters import JSONFormatter
 
 
@@ -83,6 +91,7 @@ class UrlRoutingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "landing.html")
         self.assertContains(response, f'href="{reverse("landing")}">Home</a>')
+        self.assertContains(response, f'href="{reverse("map")}"')
 
     def test_public_pages_load(self):
         r, loc = self.route.pk, self.start.pk
@@ -92,7 +101,6 @@ class UrlRoutingTests(TestCase):
             ("route-list", ()),
             ("route-detail", (r,)),
             ("feedback-route-selection", ()),
-            ("feedback-form", (r,)),
             ("feedback-confirmation", (r,)),
             ("post-ride-feedback-prompt", (r,)),
             ("location-list", ()),
@@ -107,6 +115,9 @@ class UrlRoutingTests(TestCase):
                 self.assertEqual(response.status_code, 200)
 
     def test_missing_ids_return_404(self):
+        # feedback-form needs a login before it looks the route up.
+        User.objects.create_user(username="checker", password="test-pass-123")
+        self.client.login(username="checker", password="test-pass-123")
         names = [
             "route-detail",
             "feedback-form",
@@ -279,7 +290,11 @@ class SignUpTests(TestCase):
         self.url = reverse("signup")
 
     def test_signup_page_loads(self):
-        self.assertEqual(self.client.get(self.url).status_code, 200)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create your account")
+        # Both password fields get a Show/Hide button.
+        self.assertContains(response, 'class="password-toggle"', count=2)
 
     def test_valid_signup_creates_user_and_logs_in(self):
         response = self.client.post(
@@ -313,6 +328,7 @@ class SignUpTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.filter(username="biker_24").exists())
+        self.assertContains(response, 'class="auth-field-error"')
 
 
 class ReadTests(TestCase):
@@ -374,6 +390,13 @@ class ProfileEditTests(TestCase):
         self.assertEqual(event.actor_user_id, str(self.user.pk))
         self.assertEqual(event.changes["username"], {"old": "rider", "new": "biker_24"})
         self.assertEqual(event.changes["comfortability"], {"old": 0, "new": 3})
+
+    def test_edit_page_uses_card_layout(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.get(self.url)
+        self.assertContains(response, 'class="auth-card"')
+        self.assertContains(response, "Save changes")
+        self.assertContains(response, f'href="{reverse("profile")}">Cancel</a>')
 
 
 class AuditEventTests(TestCase):
@@ -580,6 +603,20 @@ class LoginLogoutTests(TestCase):
         self.assertContains(response, "Your username and password")
         self.assertNotIn("_auth_user_id", self.client.session)
 
+    def test_failed_login_marks_fields_invalid(self):
+        """Both fields are flagged and point at the error message."""
+        response = self.client.post(
+            reverse("login"), {"username": "rider", "password": "wrong-pass"}
+        )
+        html = response.content.decode()
+        self.assertIn('id="login-error"', html)
+        self.assertEqual(html.count('aria-invalid="true"'), 2)
+        self.assertEqual(html.count('aria-describedby="login-error"'), 2)
+
+    def test_login_page_starts_without_invalid_fields(self):
+        html = self.client.get(reverse("login")).content.decode()
+        self.assertNotIn('aria-invalid="true"', html)
+
     def test_session_is_maintained_across_pages(self):
         self.client.login(username="rider", password="test-pass-123")
         for name in ("index", "profile"):
@@ -640,6 +677,250 @@ class LandmarkTests(TestCase):
                 response = self.client.get(reverse(name))
                 self.assertContains(response, "<nav")
                 self.assertContains(response, "<main")
+
+    def test_nav_marks_current_section(self):
+        """The hamburger link for the page's section is the active pill. Pages
+        that also have a bottom-bar shortcut mark that one too, so
+        aria-current appears once per nav."""
+        # Home goes to the landing page for now (the index page still exists).
+        cases = {
+            "landing": ("Home", 2),
+            "map": ("Map", 2),
+            "route-list": ("Routes", 2),
+            "trip-new": ("Plan a trip", 1),
+        }
+        for name, (label, count) in cases.items():
+            with self.subTest(name=name):
+                url = reverse(name)
+                html = self.client.get(url).content.decode()
+                self.assertIn(
+                    f'<a class="nav-link active" aria-current="page" href="{url}">{label}</a>',
+                    html,
+                )
+                self.assertEqual(html.count('aria-current="page"'), count)
+
+    def test_tab_bar_shows_log_in_or_profile(self):
+        """The bottom bar's 4th button is Log in (back to this page after)
+        when logged out, and Profile when logged in."""
+        url = reverse("map")
+        html = self.client.get(url).content.decode()
+        self.assertIn(f'href="{reverse("login")}?next={url}">', html)
+        self.assertIn("<span>Log in</span>", html)
+        self.assertNotIn("<span>Profile</span>", html)
+
+        User.objects.create_user(username="tabber", password="test-pass-123")
+        self.client.login(username="tabber", password="test-pass-123")
+        html = self.client.get(url).content.decode()
+        self.assertIn("<span>Profile</span>", html)
+        self.assertNotIn("<span>Log in</span>", html)
+
+
+def _delete_all_routes():
+    """A migration seeds the real Harrisonburg routes. Tests that need an
+    empty route table remove them: subroutes first, because a main route
+    can't be deleted while subroutes still point at it (PROTECT)."""
+    Route.objects.filter(parent_route__isnull=False).delete()
+    Route.objects.all().delete()
+
+
+class RouteListPageTests(TestCase):
+    """The routes page shows one row per route (name, comfort rating,
+    comments link), or example rows while there are no routes."""
+
+    def setUp(self):
+        _delete_all_routes()
+
+    def test_example_rows_when_no_routes(self):
+        html = self.client.get(reverse("route-list")).content.decode()
+        for color in ("Red", "Yellow", "Black", "Purple", "Blue", "Green"):
+            self.assertIn(f'<span class="route-name">{color}</span>', html)
+        self.assertEqual(html.count("Comfort rating"), 6)
+
+    def test_real_route_replaces_example_rows(self):
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        route = Route.objects.create(
+            name="Red Line",
+            color="Red",
+            start_location=start,
+            end_location=end,
+            comfortability=4,
+        )
+        html = self.client.get(reverse("route-list")).content.decode()
+        self.assertIn('class="route-row route-color--red"', html)
+        self.assertIn('<span class="route-name">Red Line</span>', html)
+        self.assertIn(f'href="{route.get_absolute_url()}">Comments</a>', html)
+        self.assertEqual(html.count("Comfort rating"), 1)
+
+
+class FeedbackRouteSelectionPageTests(TestCase):
+    """The feedback page lists routes as rows that each link to that
+    route's feedback form, or example rows while there are no routes."""
+
+    def setUp(self):
+        _delete_all_routes()
+
+    def test_example_rows_when_no_routes(self):
+        html = self.client.get(reverse("feedback-route-selection")).content.decode()
+        for color in ("Red", "Yellow", "Black", "Purple", "Blue", "Green"):
+            self.assertIn(f'<span class="feedback-name">{color}</span>', html)
+        self.assertEqual(html.count('class="feedback-link"'), 6)
+
+    def test_real_route_links_to_its_feedback_form(self):
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        route = Route.objects.create(
+            name="Blue Line", color="Blue", start_location=start, end_location=end
+        )
+        html = self.client.get(reverse("feedback-route-selection")).content.decode()
+        self.assertIn('class="route-row route-color--blue feedback-row"', html)
+        self.assertIn(f'href="{reverse("feedback-form", args=[route.pk])}"', html)
+        self.assertEqual(html.count('class="feedback-link"'), 1)
+
+
+class FeedbackFormPageTests(TestCase):
+    """One route's feedback form: login required, saves a RouteFeedback,
+    then shows the thank-you popup."""
+
+    @classmethod
+    def setUpTestData(cls):
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        cls.route = Route.objects.create(
+            name="Red", color="Red", start_location=start, end_location=end
+        )
+        cls.user = User.objects.create_user(username="rider", password="test-pass-123")
+
+    def setUp(self):
+        self.url = reverse("feedback-form", args=[self.route.pk])
+
+    def test_requires_login(self):
+        response = self.client.get(self.url)
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={self.url}",
+            fetch_redirect_response=False,
+        )
+
+    def test_form_shows_route_and_five_ratings(self):
+        self.client.login(username="rider", password="test-pass-123")
+        html = self.client.get(self.url).content.decode()
+        self.assertIn('<h1 class="ff-route-name">Red</h1>', html)
+        self.assertEqual(html.count('name="comfort_rating"'), 5)
+        self.assertIn('class="route-color--red feedback-form-page"', html)
+        self.assertNotIn(".show()", html)  # no popup before submitting
+
+    def test_valid_submit_saves_and_shows_thanks_once(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.post(
+            self.url, {"comfort_rating": "4", "text": "Wide bike lane on Main St."}
+        )
+        self.assertRedirects(response, self.url, fetch_redirect_response=False)
+        feedback = RouteFeedback.objects.get()
+        self.assertEqual(
+            (feedback.user, feedback.route, feedback.comfort_rating, feedback.text),
+            (self.user, self.route, 4, "Wide bike lane on Main St."),
+        )
+        html = self.client.get(self.url).content.decode()
+        self.assertIn("Feedback received!", html)
+        self.assertIn(".show()", html)
+        # Reloading again doesn't reopen the popup.
+        self.assertNotIn(".show()", self.client.get(self.url).content.decode())
+
+    def test_missing_rating_shows_error(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.post(self.url, {"text": "No rating"})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pick a comfort rating from 1 to 5.")
+        self.assertFalse(RouteFeedback.objects.exists())
+
+    def test_rating_out_of_range_is_rejected(self):
+        self.client.login(username="rider", password="test-pass-123")
+        response = self.client.post(self.url, {"comfort_rating": "6"})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(RouteFeedback.objects.exists())
+
+
+class ProfilePageTests(TestCase):
+    """The profile shows who you are, three stats, and your routes and
+    feedback, with helpful empty states."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="rider", password="test-pass-123")
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        cls.route = Route.objects.create(
+            name="Red", color="Red", start_location=start, end_location=end
+        )
+
+    def setUp(self):
+        self.client.login(username="rider", password="test-pass-123")
+
+    def test_header_and_stats(self):
+        html = self.client.get(reverse("profile")).content.decode()
+        self.assertIn('<h1 id="pf-name" class="pf-name">rider</h1>', html)
+        self.assertIn("Member since", html)
+        for label in ("Comfort level", "Feedback given", "Saved routes"):
+            self.assertIn(f"<dt>{label}</dt>", html)
+        self.assertIn("<dd>Not set</dd>", html)  # comfortability defaults to 0
+
+    def test_empty_states(self):
+        html = self.client.get(reverse("profile")).content.decode()
+        self.assertIn("No saved routes yet.", html)
+        self.assertIn("You haven't given feedback yet.", html)
+        self.assertIn("No rides yet.", html)
+        self.assertIn("No marked locations yet.", html)
+
+    def test_saved_route_and_feedback_show(self):
+        self.user.saved_routes.add(self.route)
+        RouteFeedback.objects.create(
+            user=self.user, route=self.route, comfort_rating=4, text="Smooth ride"
+        )
+        html = self.client.get(reverse("profile")).content.decode()
+        self.assertIn('class="pf-row route-color--red"', html)
+        self.assertIn("<dt>Feedback given</dt>\n          <dd>1</dd>", html)
+        self.assertIn("Comfort 4/5", html)
+        self.assertIn("Smooth ride", html)
+        self.assertNotIn("No saved routes yet.", html)
+
+
+class PasswordChangePageTests(TestCase):
+    """Change password uses our card-style templates, not Django's admin look."""
+
+    def setUp(self):
+        User.objects.create_user(username="rider", password="test-pass-123")
+        self.client.login(username="rider", password="test-pass-123")
+
+    def test_form_page_uses_our_template(self):
+        response = self.client.get(reverse("password_change"))
+        self.assertTemplateUsed(response, "registration/password_change_form.html")
+        self.assertContains(response, 'class="auth-card"')
+        self.assertContains(response, 'class="password-toggle"', count=3)
+
+    def test_change_then_done_page(self):
+        response = self.client.post(
+            reverse("password_change"),
+            {
+                "old_password": "test-pass-123",
+                "new_password1": "Gr33nway-Loop-77",
+                "new_password2": "Gr33nway-Loop-77",
+            },
+            follow=True,
+        )
+        self.assertTemplateUsed(response, "registration/password_change_done.html")
+        self.assertContains(response, "Password changed")
+
+    def test_wrong_old_password_shows_field_error(self):
+        response = self.client.post(
+            reverse("password_change"),
+            {
+                "old_password": "wrong",
+                "new_password1": "Gr33nway-Loop-77",
+                "new_password2": "Gr33nway-Loop-77",
+            },
+        )
+        self.assertContains(response, 'class="auth-field-error"')
 
 
 class WaypointModelTests(TestCase):

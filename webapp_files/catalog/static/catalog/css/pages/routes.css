@@ -1,0 +1,61 @@
+/* routes.css: the routes page's own row layout (route_selection.html).
+   The full-height page, title band, row colors and dividers come from
+   route-rows.css, which this page also loads. Mobile first. */
+
+/* Three columns: name | comfort rating | comments button. The two side
+   columns are equal (1fr), so the middle column is centered in the row. */
+.route-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.route-name {
+  color: var(--route-ink, var(--color-primary));
+  font-size: 1.35rem;  /* real names can be long ("Memorial Ice House Subroute") */
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.route-comfort {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.route-comfort-label {
+  max-width: 5rem;  /* wraps to "Comfort / rating" so the middle stays narrow */
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.route-comfort-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+}
+
+/* Outlined button at the right end of the row; 52px tall so it's easy to tap. */
+.route-comments {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 0.9rem;
+  border: 2px solid var(--color-primary);
+  border-radius: 0.5rem;
+  background-color: #fff;
+  color: var(--color-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.route-comments:hover,
+.route-comments:focus-visible {
+  background-color: var(--color-primary);
+  color: #fff;
+}

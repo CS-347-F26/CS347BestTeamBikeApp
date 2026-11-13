@@ -13,7 +13,7 @@ from django.db import transaction
 from django.views.decorators.http import require_GET
 
 from .models import User, Route, RouteWaypoint, Location, RouteFeedback
-from .forms import ProfileForm, SignUpForm
+from .forms import ProfileForm, RouteFeedbackForm, SignUpForm
 
 route_logger = logging.getLogger("catalog.routes")
 health_logger = logging.getLogger("catalog.health")
@@ -96,18 +96,35 @@ def feedback_route_selection(request):
     return render(
         request,
         "feedback_route_selection.html",
+        {"route_list": Route.objects.all()},
     )
 
 
+@login_required
 def feedback_form(request, pk):
-    """Display the feedback form for a selected route (GET); the same URL
-    will accept the submitted form (POST) once the form is built."""
+    """Feedback form for one route. GET shows the form; POST saves it.
+
+    After a successful save we redirect back to this same page (so a refresh
+    can't submit twice) and leave a one-time note in the session, which the
+    next GET turns into the "thank you" popup."""
     route = get_object_or_404(Route, pk=pk)
     _log_route_loaded(request, route, "feedback_form")
+    if request.method == "POST":
+        form = RouteFeedbackForm(request.POST)
+        if form.is_valid():
+            feedback = form.save(commit=False)
+            feedback.user = request.user
+            feedback.route = route
+            feedback.save()
+            request.session["feedback_submitted"] = route.pk
+            return redirect("feedback-form", pk=route.pk)
+    else:
+        form = RouteFeedbackForm()
+    show_thanks = request.session.pop("feedback_submitted", None) == route.pk
     return render(
         request,
         "feedback_form.html",
-        {"route": route},
+        {"route": route, "form": form, "show_thanks": show_thanks},
     )
 
 
@@ -260,7 +277,17 @@ def trip_new(request):
 @login_required
 def profile(request):
     """The logged-in rider's profile. Anonymous visitors are sent to login."""
-    return render(request, "profile.html")
+    feedback = request.user.route_feedback.select_related("route")
+    return render(
+        request,
+        "profile.html",
+        {
+            "recent_feedback": feedback[
+                :3
+            ],  # newest first (RouteFeedback.Meta.ordering)
+            "feedback_count": feedback.count(),
+        },
+    )
 
 
 @login_required

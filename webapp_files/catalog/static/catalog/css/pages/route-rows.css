@@ -1,0 +1,64 @@
+/* route-rows.css: the full-screen stack of colored route rows, shared by
+   the routes page (route_selection.html) and the feedback page
+   (feedback_route_selection.html). Each page adds its own row layout in
+   routes.css / feedback.css. Mobile first. */
+
+/* Fill the screen between the top bar and the bottom tab bar: the page is a
+   column one screen tall (100svh, the visible height on phones), <main>
+   takes the space the top bar leaves, and the list of rows takes what the
+   title leaves. Each row then grows to an equal share of that space.
+   (Same idea as landing.css.) With many routes, rows keep their minimum
+   height and the page scrolls instead. */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The centered page title in its own band at the top. Like the rows, it
+   stretches edge to edge (see .route-rows). */
+.page-title-band {
+  margin: 0 calc(var(--bs-gutter-x, 1.5rem) * -0.5);
+  padding: 1.25rem 1rem 1rem;
+  border-bottom: 2px solid var(--color-primary);
+  text-align: center;
+}
+
+.page-title-band h1 {
+  margin: 0;
+  font-weight: 700;
+}
+
+.page-title-band p {
+  margin: 0.25rem 0 0;
+}
+
+/* The rows stretch edge to edge: the negative margins cancel <main>'s
+   side padding (Bootstrap's .container-fluid gutter). */
+.route-rows {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(var(--bs-gutter-x, 1.5rem) * -0.5);
+  padding: 0;
+  list-style: none;
+}
+
+/* One route row. Its colors come from a .route-color--<color> class in
+   main.css, which sets --route-bg (a light tint) and --route-ink (a darker
+   shade of the same color, used for the name). A color with no class gets a
+   white row with dark-teal text. */
+.route-row {
+  flex: 1;  /* share the leftover height equally... */
+  display: flex;
+  min-height: 5.5rem;
+  max-height: 8rem;  /* ...but never balloon when there are only a few routes */
+  background-color: var(--route-bg, #fff);
+  border-bottom: 1px solid rgb(8 76 97 / 0.2);
+}

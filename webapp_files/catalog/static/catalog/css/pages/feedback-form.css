@@ -1,0 +1,211 @@
+/* feedback-form.css: one route's feedback form (feedback_form.html). Mobile first.
+   The body carries route-color--<color> (main.css), which sets --route-bg and
+   --route-ink, so every route color works without changes here. */
+
+/* The whole page takes the route's light tint (sage if the color is unknown). */
+body.feedback-form-page {
+  background-color: var(--route-bg, var(--color-background));
+}
+
+/* Route name at the top, centered, in the darker shade. */
+.ff-header {
+  padding: 1.5rem 0 1rem;
+  text-align: center;
+}
+
+.ff-kicker {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ff-route-name {
+  margin: 0;
+  color: var(--route-ink, var(--color-primary));
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+/* The white card holding the form (same look as the login card). */
+.ff-card {
+  max-width: 28rem;
+  margin: 0 auto 1.5rem;
+  padding: 1.5rem 1.25rem;
+  border-radius: 1rem;
+  background-color: #fff;
+  box-shadow: 0 4px 16px rgb(8 76 97 / 0.12);
+}
+
+/* --- Comfort rating: five square buttons ------------------------------- */
+.ff-rating {
+  margin-bottom: 1.5rem;
+}
+
+.ff-rating legend,
+.ff-field label {
+  margin-bottom: 0.5rem;
+  color: var(--color-primary);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.ff-rating-options {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+}
+
+/* The real radio input stays in the page (keyboard and screen readers use
+   it) but is invisible; its label is the visible square. */
+.ff-rating-options input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.ff-rating-options label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  border: 2px solid var(--color-secondary);
+  border-radius: 0.625rem;
+  background-color: #fff;
+  color: var(--color-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ff-rating-options label:hover {
+  border-color: var(--color-primary);
+}
+
+.ff-rating-options input:checked + label {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.ff-rating-options input:focus-visible + label {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.ff-rating-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  color: var(--color-secondary);  /* slate on white: 5.5:1 */
+  font-size: 0.85rem;
+}
+
+/* --- Comments ----------------------------------------------------------- */
+.ff-field {
+  margin-bottom: 1.5rem;
+}
+
+.ff-field label {
+  display: block;
+}
+
+.ff-field textarea {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border: 1.5px solid var(--color-secondary);
+  border-radius: 0.625rem;
+  color: var(--color-primary);
+  font-size: 1rem;  /* 16px stops iPhones from zooming in */
+  resize: vertical;
+}
+
+.ff-field textarea:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 0.25rem rgb(86 163 166 / 0.35);
+}
+
+.ff-error {
+  margin-top: 0.4rem;
+  color: #8c1d18;  /* dark red on white: 9.1:1 */
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* --- Submit (also used for the popup's main button) ----------------------- */
+.ff-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60%;
+  min-width: 12rem;
+  height: 48px;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 0.625rem;
+  background-color: var(--color-primary);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ff-submit:hover,
+.ff-submit:active {
+  background-color: #063a4a;
+  color: #fff;
+}
+
+.ff-submit:focus-visible,
+.ff-close:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* --- Thank-you popup ---------------------------------------------------- */
+.ff-thanks {
+  align-items: center;
+  padding: 2rem 1.5rem 1.5rem;
+  border: 0;
+  border-radius: 1.25rem;
+  background-color: #fff;  /* Bootstrap would use the sage page color */
+  color: var(--color-primary);
+  text-align: center;
+}
+
+.ff-smiley {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-light-teal);
+}
+
+.ff-thanks-title {
+  margin-bottom: 0.25rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.ff-thanks-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.ff-close {
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}

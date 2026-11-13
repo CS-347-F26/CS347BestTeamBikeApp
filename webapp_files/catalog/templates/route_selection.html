@@ -1,19 +1,82 @@
 {% extends "base_generic.html" %}
+{% load static %}
 
 {% block title %}Routes{% endblock %}
 
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/route-rows.css' %}">
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/routes.css' %}">
+{% endblock %}
+
 {% block content %}
-  <h1>Routes</h1>
+  <header class="page-title-band">
+    <h1>Routes</h1>
+  </header>
 
-  <p>Select a bike route.</p>
-
-  {% if route_list %}
-    <ul>
-      {% for route in route_list %}
-        <li><a href="{{ route.get_absolute_url }}">{{ route.name }}</a> ({{ route.color }})</li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>There are no routes yet.</p>
-  {% endif %}
+  {# One row per route: name | comfort rating | comments button. #}
+  {# The row's colors come from its route-color--<color> class in main.css. #}
+  <ul class="route-rows">
+    {% for route in route_list %}
+      <li class="route-row route-color--{{ route.color|lower }}">
+        <span class="route-name">{{ route.name }}</span>
+        <span class="route-comfort">
+          <span class="route-comfort-label">Comfort rating</span>
+          <span class="route-comfort-value">{{ route.comfortability }}<span class="visually-hidden"> out of 5</span></span>
+        </span>
+        <a class="route-comments" href="{{ route.get_absolute_url }}">Comments</a>
+      </li>
+    {% empty %}
+      {# Example rows, shown only while the database has no routes. #}
+      {# Delete this block once real routes are added. Their Comments links #}
+      {# point at route ids 1-6, which don't exist yet (they show the 404 page). #}
+      <li class="route-row route-color--red">
+        <span class="route-name">Red</span>
+        <span class="route-comfort">
+          <span class="route-comfort-label">Comfort rating</span>
+          <span class="route-comfort-value">3<span class="visually-hidden"> out of 5</span></span>
+        </span>
+        <a class="route-comments" href="{% url 'route-detail' 1 %}">Comments</a>
+      </li>
+      <li class="route-row route-color--yellow">
+        <span class="route-name">Yellow</span>
+        <span class="route-comfort">
+          <span class="route-comfort-label">Comfort rating</span>
+          <span class="route-comfort-value">4<span class="visually-hidden"> out of 5</span></span>
+        </span>
+        <a class="route-comments" href="{% url 'route-detail' 2 %}">Comments</a>
+      </li>
+      <li class="route-row route-color--black">
+        <span class="route-name">Black</span>
+        <span class="route-comfort">
+          <span class="route-comfort-label">Comfort rating</span>
+          <span class="route-comfort-value">2<span class="visually-hidden"> out of 5</span></span>
+        </span>
+        <a class="route-comments" href="{% url 'route-detail' 3 %}">Comments</a>
+      </li>
+      <li class="route-row route-color--purple">
+        <span class="route-name">Purple</span>
+        <span class="route-comfort">
+          <span class="route-comfort-label">Comfort rating</span>
+          <span class="route-comfort-value">1<span class="visually-hidden"> out of 5</span></span>
+        </span>
+        <a class="route-comments" href="{% url 'route-detail' 4 %}">Comments</a>
+      </li>
+      <li class="route-row route-color--blue">
+        <span class="route-name">Blue</span>
+        <span class="route-comfort">
+          <span class="route-comfort-label">Comfort rating</span>
+          <span class="route-comfort-value">5<span class="visually-hidden"> out of 5</span></span>
+        </span>
+        <a class="route-comments" href="{% url 'route-detail' 5 %}">Comments</a>
+      </li>
+      <li class="route-row route-color--green">
+        <span class="route-name">Green</span>
+        <span class="route-comfort">
+          <span class="route-comfort-label">Comfort rating</span>
+          <span class="route-comfort-value">4<span class="visually-hidden"> out of 5</span></span>
+        </span>
+        <a class="route-comments" href="{% url 'route-detail' 6 %}">Comments</a>
+      </li>
+    {% endfor %}
+  </ul>
 {% endblock %}

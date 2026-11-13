@@ -1,42 +1,21 @@
 {% extends "base_generic.html" %}
+{% load static %}
 
-{% block title %}Bike Transit — Welcome{% endblock %}
+{% block title %}BikeWay — Welcome{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/landing.css' %}">
+{% endblock %}
 
 {% block content %}
-  <section class="py-5">
-    <h1 class="display-5 fw-bold">Get around town by bike, like riding the subway</h1>
-    <p class="lead col-lg-8">
-      Bike Transit organizes your town's safest bike routes into color-coded
-      lines, just like a transit map. Instead of reading a busy street map,
-      think "I'm on the Red line, and I switch to the Green line at the next
-      transfer point."
+  <section class="hero">
+    <h1 class="hero-title">BikeWay</h1>
+    <p class="hero-tagline">Bike Riding Your Way.</p>
+    <p class="hero-intro">
+      Welcome to BikeWay! The free app that allows you to map your own routes
+      throughout your community. BikeWay is a simple map that emulates a subway
+      system. With BikeWay, you can switch and customize your bike rides based on
+      comfortability, road type, safety and more.
     </p>
-    <div class="d-flex flex-wrap gap-2 my-4">
-      <a class="btn btn-primary btn-lg" href="{% url 'index' %}">Enter the app</a>
-      <a class="btn btn-outline-primary btn-lg" href="{% url 'map' %}">View the map</a>
-      <a class="btn btn-outline-primary btn-lg" href="{% url 'route-list' %}">Browse routes</a>
-      <a class="btn btn-outline-primary btn-lg" href="{% url 'trip-new' %}">Plan a trip</a>
-    </div>
-    {% if not user.is_authenticated %}
-      <p>
-        New here? <a href="{% url 'signup' %}">Sign up</a> to save routes and
-        share feedback, or <a href="{% url 'login' %}">log in</a>.
-      </p>
-    {% endif %}
-  </section>
-
-  <section class="row g-4 pb-5">
-    <div class="col-md-4">
-      <h2 class="h4">Simple lines</h2>
-      <p>Each route is a named, colored line that follows real streets and paths.</p>
-    </div>
-    <div class="col-md-4">
-      <h2 class="h4">Clear transfers</h2>
-      <p>Stations mark where lines meet, so you always know where to switch.</p>
-    </div>
-    <div class="col-md-4">
-      <h2 class="h4">Rider feedback</h2>
-      <p>Cyclists rate how comfortable each route feels, so the map keeps getting better.</p>
-    </div>
   </section>
 {% endblock %}
