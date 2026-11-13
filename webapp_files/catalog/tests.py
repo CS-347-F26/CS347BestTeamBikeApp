@@ -78,7 +78,7 @@ class UrlRoutingTests(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "landing.html")
-        self.assertContains(response, f'href="{reverse("index")}"')
+        self.assertContains(response, f'href="{reverse("map")}"')
 
     def test_public_pages_load(self):
         r, loc = self.route.pk, self.start.pk
@@ -389,8 +389,9 @@ class LandmarkTests(TestCase):
         """The hamburger link for the page's section is the active pill. Pages
         that also have a bottom-bar shortcut mark that one too, so
         aria-current appears once per nav."""
+        # Home goes to the landing page for now (the index page still exists).
         cases = {
-            "index": ("Home", 2),
+            "landing": ("Home", 2),
             "map": ("Map", 2),
             "route-list": ("Routes", 2),
             "trip-new": ("Plan a trip", 1),
