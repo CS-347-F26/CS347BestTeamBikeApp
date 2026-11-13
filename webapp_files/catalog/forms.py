@@ -32,3 +32,12 @@ class StyledAuthenticationForm(AuthenticationForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
+
+    def get_invalid_login_error(self):
+        """On a wrong username/password, mark both fields invalid and link
+        them to the error message (id="login-error" in login.html) so screen
+        readers announce why."""
+        for field in self.fields.values():
+            field.widget.attrs["aria-invalid"] = "true"
+            field.widget.attrs["aria-describedby"] = "login-error"
+        return super().get_invalid_login_error()

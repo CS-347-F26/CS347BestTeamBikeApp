@@ -1,0 +1,168 @@
+/* auth.css: the login and sign-up pages (registration/login.html and signup.html). Mobile first. */
+
+/* Center the card between the top bar and the bottom tab bar
+   (same technique as landing.css). */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+/* The white card holding the form. */
+.auth-card {
+  width: 100%;
+  max-width: 24rem;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem 1.25rem;
+  border-radius: 1rem;
+  background-color: #fff;
+  box-shadow: 0 4px 16px rgb(8 76 97 / 0.12);
+}
+
+.auth-title {
+  margin-bottom: 0.25rem;
+  color: var(--color-primary);
+  font-size: 1.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.auth-subtitle {
+  margin-bottom: 1.5rem;
+  color: var(--color-secondary);  /* slate on white: 5.5:1 */
+  text-align: center;
+}
+
+/* Failed-login message. Dark red text on a pale red tint (7.4:1). */
+.auth-error {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--color-danger);
+  border-radius: 0.625rem;
+  background-color: #fdecea;
+  color: #8c1d18;
+  font-size: 0.95rem;
+}
+
+.auth-field {
+  margin-bottom: 1.1rem;
+}
+
+.auth-field label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Inputs: 48px tall and 16px text (smaller text makes iPhones zoom in).
+   They keep Bootstrap's form-control class; this restyles it. */
+.auth-card .form-control {
+  height: 48px;
+  padding: 0 0.85rem;
+  border: 1.5px solid var(--color-secondary);
+  border-radius: 0.625rem;
+  background-color: #fff;  /* Bootstrap would fill it with the sage page color */
+  color: var(--color-primary);
+  font-size: 1rem;
+}
+
+.auth-card .form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.25rem rgb(86 163 166 / 0.35);  /* soft light-teal ring */
+}
+
+.auth-card .form-control[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+/* Password field with the Show/Hide button inside its right end. */
+.password-wrap {
+  position: relative;
+}
+
+.password-wrap .form-control {
+  padding-right: 4.5rem;  /* room for the button */
+}
+
+.password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 48px;
+  min-width: 4rem;
+  padding: 0 0.85rem;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* The one main action: full width, dark teal. */
+.auth-submit {
+  width: 100%;
+  height: 48px;
+  margin-top: 0.4rem;
+  border: 0;
+  border-radius: 0.625rem;
+  background-color: var(--color-primary);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  transition: background-color 0.15s ease;
+}
+
+.auth-submit:hover,
+.auth-submit:active {
+  background-color: #063a4a;  /* slightly darker teal */
+}
+
+.auth-submit:focus-visible,
+.password-toggle:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.auth-switch {
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-background);
+  color: var(--color-primary);
+  text-align: center;
+}
+
+.auth-switch a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Sign-up page: the rules under a field (e.g. password requirements). */
+.auth-help {
+  margin-top: 0.4rem;
+  color: var(--color-secondary);  /* slate on white: 5.5:1 */
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.auth-help ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+
+/* A problem with one field, shown right under it. */
+.auth-field-error {
+  margin-top: 0.4rem;
+  color: #8c1d18;  /* dark red on white: 9.1:1 */
+  font-size: 0.9rem;
+  font-weight: 600;
+}

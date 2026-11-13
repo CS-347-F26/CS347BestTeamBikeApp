@@ -191,7 +191,11 @@ class SignUpTests(TestCase):
         self.url = reverse("signup")
 
     def test_signup_page_loads(self):
-        self.assertEqual(self.client.get(self.url).status_code, 200)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create your account")
+        # Both password fields get a Show/Hide button.
+        self.assertContains(response, 'class="password-toggle"', count=2)
 
     def test_valid_signup_creates_user_and_logs_in(self):
         response = self.client.post(
@@ -219,6 +223,7 @@ class SignUpTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.filter(username="biker_24").exists())
+        self.assertContains(response, 'class="auth-field-error"')
 
 
 class ReadTests(TestCase):
@@ -323,6 +328,20 @@ class LoginLogoutTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Your username and password")
         self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_failed_login_marks_fields_invalid(self):
+        """Both fields are flagged and point at the error message."""
+        response = self.client.post(
+            reverse("login"), {"username": "rider", "password": "wrong-pass"}
+        )
+        html = response.content.decode()
+        self.assertIn('id="login-error"', html)
+        self.assertEqual(html.count('aria-invalid="true"'), 2)
+        self.assertEqual(html.count('aria-describedby="login-error"'), 2)
+
+    def test_login_page_starts_without_invalid_fields(self):
+        html = self.client.get(reverse("login")).content.decode()
+        self.assertNotIn('aria-invalid="true"', html)
 
     def test_session_is_maintained_across_pages(self):
         self.client.login(username="rider", password="test-pass-123")
