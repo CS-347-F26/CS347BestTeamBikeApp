@@ -422,6 +422,30 @@ class LandmarkTests(TestCase):
         self.assertNotIn("<span>Log in</span>", html)
 
 
+class RouteListPageTests(TestCase):
+    """The routes page shows one row per route (name, comfort rating,
+    comments link), or example rows while there are no routes."""
+
+    def test_example_rows_when_no_routes(self):
+        html = self.client.get(reverse("route-list")).content.decode()
+        for color in ("Red", "Yellow", "Black", "Purple", "Blue", "Green"):
+            self.assertIn(f'<span class="route-name">{color}</span>', html)
+        self.assertEqual(html.count("Comfort rating"), 6)
+
+    def test_real_route_replaces_example_rows(self):
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        route = Route.objects.create(
+            name="Red Line", color="Red", start_location=start, end_location=end,
+            comfortability=4,
+        )
+        html = self.client.get(reverse("route-list")).content.decode()
+        self.assertIn('class="route-row route-row--red"', html)
+        self.assertIn('<span class="route-name">Red Line</span>', html)
+        self.assertIn(f'href="{route.get_absolute_url()}">Comments</a>', html)
+        self.assertEqual(html.count("Comfort rating"), 1)
+
+
 class WaypointModelTests(TestCase):
     """Waypoints keep a per-route order, and one waypoint can sit at a
     different index on each route it belongs to."""

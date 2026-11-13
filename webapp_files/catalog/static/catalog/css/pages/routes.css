@@ -1,0 +1,119 @@
+/* routes.css: styles for the routes list (route_selection.html). Mobile first. */
+
+/* Fill the screen between the top bar and the bottom tab bar: the page is a
+   column one screen tall (100svh, the visible height on phones), <main>
+   takes the space the top bar leaves, and the list of rows takes what the
+   title leaves. Each row then grows to an equal share of that space.
+   (Same idea as landing.css.) With many routes, rows keep their minimum
+   height and the page scrolls instead. */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The centered "Routes" title in its own band at the top. Like the rows,
+   it stretches edge to edge (see .route-rows). */
+.routes-header {
+  margin: 0 calc(var(--bs-gutter-x, 1.5rem) * -0.5);
+  padding: 1.25rem 1rem 1rem;
+  border-bottom: 2px solid var(--color-primary);
+  text-align: center;
+}
+
+.routes-header h1 {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* The rows stretch edge to edge: the negative margins cancel <main>'s
+   side padding (Bootstrap's .container-fluid gutter). */
+.route-rows {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(var(--bs-gutter-x, 1.5rem) * -0.5);
+  padding: 0;
+  list-style: none;
+}
+
+/* One route: three columns (name | comfort rating | comments button).
+   The two side columns are equal (1fr), so the middle column is centered
+   in the row.
+   Each color class below sets --row-bg (a light tint) and --row-ink
+   (a darker shade of the same color, used for the name). */
+.route-row {
+  --row-bg: #fff;
+  --row-ink: var(--color-primary);
+  flex: 1;  /* share the leftover height equally */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 5.5rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--row-bg);
+  border-bottom: 1px solid rgb(8 76 97 / 0.2);
+}
+
+.route-name {
+  color: var(--row-ink);
+  font-size: 1.85rem;
+  font-weight: 700;
+}
+
+.route-comfort {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.route-comfort-label {
+  max-width: 5rem;  /* wraps to "Comfort / rating" so the middle stays narrow */
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.route-comfort-value {
+  font-size: 2.25rem;
+  font-weight: 700;
+}
+
+/* Outlined button at the right end of the row; 52px tall so it's easy to tap. */
+.route-comments {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 0.9rem;
+  border: 2px solid var(--color-primary);
+  border-radius: 0.5rem;
+  background-color: #fff;
+  color: var(--color-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.route-comments:hover,
+.route-comments:focus-visible {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+/* Route colors. Name-on-row contrast: red 6.1, yellow 5.5, black 13.4,
+   purple 7.4, blue 6.6, green 5.4 (all pass 4.5:1). Add a class here when
+   a route uses a new color; its row is white until then. */
+.route-row--red    { --row-bg: #f8d7d5; --row-ink: #9b1c1c; }
+.route-row--yellow { --row-bg: #fbefb8; --row-ink: #7a5b00; }
+.route-row--black  { --row-bg: #d9d9d9; --row-ink: #111; }
+.route-row--purple { --row-bg: #e6daf5; --row-ink: #5b2a86; }
+.route-row--blue   { --row-bg: #d6e6fa; --row-ink: #1e4e8c; }
+.route-row--green  { --row-bg: #d7f0da; --row-ink: #1f6b2e; }

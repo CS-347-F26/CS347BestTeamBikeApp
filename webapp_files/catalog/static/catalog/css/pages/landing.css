@@ -8,8 +8,6 @@
    padding for the tab bar, and Bootstrap's border-box sizing counts that
    padding inside the 100svh. */
 body {
-  /* Pale sage. Dark teal text on it is 7.1:1. */
-  background-color: #d1e2df;
   display: flex;
   flex-direction: column;
   min-height: 100svh;

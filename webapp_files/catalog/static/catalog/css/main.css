@@ -23,15 +23,15 @@
   --color-yellow: #e3b505;
   --color-light-teal: #56a3a6;
   --color-red: #db504a;
-  --color-off-white: #f4f8f9;
+  --color-pale-sage: #d1e2df;
 
   /* Roles. Contrast notes are against white unless noted. */
   --color-primary: var(--color-dark-teal);   /* header, tab bar, main buttons, headings; white text OK (9.5:1) */
-  --color-secondary: var(--color-slate);     /* secondary buttons, muted text, borders; OK as text (5.5:1) */
+  --color-secondary: var(--color-slate);     /* secondary buttons, muted text, borders; 4.1:1 on the page background, so use it for bold/large text only */
   --color-accent: var(--color-yellow);       /* active tab, selected states, highlights; never as text on white (1.9:1), use dark text on it */
   --color-positive: var(--color-light-teal); /* success, "comfortable" ratings, hover; use dark text on it (white is 2.9:1) */
   --color-danger: var(--color-red);          /* errors, delete, "unsafe"; white text only when bold/large (4.0:1) */
-  --color-background: var(--color-off-white);
+  --color-background: var(--color-pale-sage);   /* dark teal text on it: 7.1:1 */
   --color-text: var(--color-dark-teal);
 
   /* Bootstrap reads these for the page background and text color. */
