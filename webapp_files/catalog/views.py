@@ -1,4 +1,6 @@
+import json
 from math import isfinite
+from pathlib import Path
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
@@ -115,7 +117,7 @@ class LocationDetailView(generic.DetailView):
 
 
 def map_view(request):
-    """Display Harrisonburg locations and straight-line route connections."""
+    """Display locations, database routes, and predefined Harrisonburg routes."""
     locations = []
     valid_location_ids = set()
     for location in Location.objects.all():
@@ -150,10 +152,58 @@ def map_view(request):
         and route.end_location_id in valid_location_ids
     ]
 
+    waypoints_path = Path(__file__).resolve().parents[1] / "waypoints.json"
+    with waypoints_path.open(encoding="utf-8") as waypoints_file:
+        route_groups = json.load(waypoints_file)
+
+    predefined_routes = []
+    named_waypoints = []
+    for route_group in route_groups:
+        for feature in route_group["features"]:
+            route_name = feature.get("name") or feature.get("type")
+            coordinates = []
+            for point in feature["geometry"]["coordinates"]:
+                longitude, latitude = point[:2]
+                if (
+                    not isfinite(longitude)
+                    or not isfinite(latitude)
+                    or not -180 <= longitude <= 180
+                    or not -90 <= latitude <= 90
+                ):
+                    raise ValueError(
+                        f"Invalid coordinate in predefined route {route_name!r}"
+                    )
+
+                coordinates.append([longitude, latitude])
+                if len(point) > 2 and point[2]:
+                    named_waypoints.append(
+                        {
+                            "name": point[2],
+                            "longitude": longitude,
+                            "latitude": latitude,
+                        }
+                    )
+
+            predefined_routes.append(
+                {
+                    "name": route_name,
+                    "type": feature["geometry"]["type"],
+                    "color": feature["color"].lower(),
+                    "coordinates": coordinates,
+                }
+            )
+
     return render(
         request,
         "map.html",
-        {"map_data": {"locations": locations, "routes": routes}},
+        {
+            "map_data": {
+                "locations": locations,
+                "routes": routes,
+                "predefined_routes": predefined_routes,
+                "named_waypoints": named_waypoints,
+            }
+        },
     )
 
 

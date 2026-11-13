@@ -153,36 +153,95 @@ class MapViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="bike-map"')
+        self.assertContains(response, "Route glossary")
+        self.assertContains(
+            response,
+            "Main routes are solid; dashed subroutes use their main route's color.",
+        )
         self.assertContains(response, "min-height: 360px")
         self.assertContains(response, "tiles.openfreemap.org/styles/liberty")
         self.assertContains(response, "maplibre-gl@6.17.0")
         self.assertContains(response, "OpenStreetMap contributors")
+        map_data = response.context["map_data"]
         self.assertEqual(
-            response.context["map_data"],
+            map_data["locations"],
+            [
+                {
+                    "id": start.pk,
+                    "name": "Court Square",
+                    "latitude": 38.449,
+                    "longitude": -78.869,
+                },
+                {
+                    "id": end.pk,
+                    "name": "JMU Quad",
+                    "latitude": 38.438,
+                    "longitude": -78.871,
+                },
+            ],
+        )
+        self.assertEqual(
+            map_data["routes"],
+            [
+                {
+                    "name": "Red Line",
+                    "color": "red",
+                    "start": [38.449, -78.869],
+                    "end": [38.438, -78.871],
+                }
+            ],
+        )
+        self.assertEqual(
+            [route["name"] for route in map_data["predefined_routes"]],
+            [
+                "West Side",
+                "West Side Emu Subroute",
+                "Friendly City Trail",
+                "Brewery Loop",
+                "Pleasant Hill",
+                "Pleasant Hill Chestnut Subroute",
+                "Pleasant Hill Butler Subroute",
+                "Memorial",
+                "Memorial Westover Subroute",
+                "Memorial Ice House Subroute",
+            ],
+        )
+        west_side = map_data["predefined_routes"][0]
+        self.assertEqual(west_side["name"], "West Side")
+        self.assertEqual(west_side["type"], "MainRoute")
+        self.assertEqual(west_side["color"], "green")
+        self.assertEqual(west_side["coordinates"][0], [-78.8824499, 38.482479])
+        self.assertEqual(west_side["coordinates"][-1], [-78.9007344, 38.4342646])
+        self.assertEqual(map_data["predefined_routes"][2]["color"], "yellow")
+        self.assertEqual(map_data["predefined_routes"][1]["color"], "green")
+        self.assertContains(response, 'style="color: green"')
+        self.assertContains(response, 'style="color: #806000"')
+        glossary = response.content.decode().split(
+            '<section class="route-glossary"', 1
+        )[1].split("</section>", 1)[0]
+        for route_name in (
+            "West Side",
+            "Friendly City Trail",
+            "Brewery Loop",
+            "Pleasant Hill",
+            "Memorial",
+        ):
+            self.assertIn(route_name, glossary)
+        self.assertNotIn("Subroute", glossary)
+        self.assertIn(
             {
-                "locations": [
-                    {
-                        "id": start.pk,
-                        "name": "Court Square",
-                        "latitude": 38.449,
-                        "longitude": -78.869,
-                    },
-                    {
-                        "id": end.pk,
-                        "name": "JMU Quad",
-                        "latitude": 38.438,
-                        "longitude": -78.871,
-                    },
-                ],
-                "routes": [
-                    {
-                        "name": "Red Line",
-                        "color": "red",
-                        "start": [38.449, -78.869],
-                        "end": [38.438, -78.871],
-                    }
-                ],
+                "name": "Willow Run Rd",
+                "longitude": -78.8824499,
+                "latitude": 38.482479,
             },
+            map_data["named_waypoints"],
+        )
+        self.assertTrue(
+            all(
+                len(point) == 2
+                for route in map_data["predefined_routes"]
+                for point in route["coordinates"]
+            )
         )
 
 

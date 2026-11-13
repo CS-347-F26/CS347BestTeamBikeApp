@@ -5,6 +5,7 @@
     {
       "name": "West Side",
       "properties": {},
+      "color": "Green",
       "geometry": {
         "type": "MainRoute",
         "coordinates": [
@@ -254,6 +255,7 @@
     {
       "type": "West Side Emu Subroute",
       "properties": {},
+      "color": "Green",
       "geometry": {
         "type": "SubRoute",
         "coordinates": [
@@ -283,6 +285,7 @@
     {
       "type": "Friendly City Trail",
       "properties": {},
+      "color": "Yellow",
       "geometry": {
         "type": "MainRoute",
         "coordinates": [
@@ -1452,6 +1455,7 @@
     {
       "type": "Brewery Loop",
       "properties": {},
+      "color": "Orange",
       "geometry": {
         "type": "MainRoute",
         "coordinates": [
@@ -1561,6 +1565,7 @@
     {
       "type": "Pleasant Hill",
       "properties": {},
+      "color": "Maroon",
       "geometry": {
         "type": "MainRoute",
         "coordinates": [
@@ -1720,6 +1725,7 @@
     {
       "type": "Pleasant Hill Chestnut Subroute",
       "properties": {},
+      "color": "Maroon",
       "geometry": {
         "type": "SubRoute",
         "coordinates": [
@@ -1814,6 +1820,7 @@
     {
       "type": "Pleasant Hill Butler Subroute",
       "properties": {},
+      "color": "Maroon",
       "geometry": {
         "type": "SubRoute",
         "coordinates": [
@@ -1983,6 +1990,7 @@
     {
       "type": "Memorial",
       "properties": {},
+      "color": "Pink",
       "geometry": {
         "type": "MainRoute",
         "coordinates": [
@@ -2147,6 +2155,7 @@
     {
       "type": "Memorial Westover Subroute",
       "properties": {},
+      "color": "Pink",
       "geometry": {
         "type": "SubRoute",
         "coordinates": [
@@ -2276,6 +2285,7 @@
     {
       "type": "Memorial Ice House Subroute",
       "properties": {},
+      "color": "Pink",
       "geometry": {
         "type": "SubRoute",
         "coordinates": [

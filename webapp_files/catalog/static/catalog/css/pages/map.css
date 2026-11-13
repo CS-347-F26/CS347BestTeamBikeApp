@@ -12,6 +12,24 @@
   font-size: 0.875rem;
 }
 
+.route-glossary {
+  margin-top: 1.5rem;
+}
+
+.route-glossary-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.5rem 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.route-glossary-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* Wider screens get a taller map. */
 @media (min-width: 36rem) {
   #bike-map {

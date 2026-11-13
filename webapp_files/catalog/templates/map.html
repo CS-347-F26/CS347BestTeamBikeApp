@@ -31,8 +31,26 @@
     Map data by <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>,
     <a href="https://openmaptiles.org/">OpenMapTiles</a>, and
     <a href="https://openfreemap.org/">OpenFreeMap</a>.
-    Route lines connect each route's start and end locations.
+    Harrisonburg routes and named waypoints are shown on the map.
   </p>
+  <section class="route-glossary" aria-labelledby="route-glossary-title">
+    <h2 id="route-glossary-title">Route glossary</h2>
+    <p>Main routes are solid; dashed subroutes use their main route's color.</p>
+    <ul class="route-glossary-list">
+      {% for route in map_data.predefined_routes %}
+        {% if route.type == "MainRoute" %}
+          <li>
+            <strong>{{ route.name }}</strong> —
+            {% if route.color == "yellow" %}
+              <span style="color: #806000">{{ route.color|title }}</span>
+            {% else %}
+              <span style="color: {{ route.color }}">{{ route.color|title }}</span>
+            {% endif %}
+          </li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  </section>
 
   {{ map_data|json_script:"map-data" }}
   <script type="module">
@@ -69,7 +87,6 @@
 
       new maplibregl.Marker({ color: "#2d6a4f" })
         .setLngLat(point)
-        .setPopup(new maplibregl.Popup().setText(location.name))
         .addTo(map);
       bounds.extend(point);
     });
@@ -88,10 +105,67 @@
       bounds.extend(end);
     });
 
+    const predefinedFeatures = mapData.predefined_routes.map((route) => ({
+      type: "Feature",
+      properties: {
+        name: route.name,
+        routeType: route.type,
+        color: route.color,
+      },
+      geometry: { type: "LineString", coordinates: route.coordinates },
+    }));
+    const waypointFeatures = mapData.named_waypoints.map((waypoint) => ({
+      type: "Feature",
+      properties: { name: waypoint.name },
+      geometry: {
+        type: "Point",
+        coordinates: [waypoint.longitude, waypoint.latitude],
+      },
+    }));
+
+    predefinedFeatures.forEach((feature) => {
+      feature.geometry.coordinates.forEach((point) => bounds.extend(point));
+    });
+
+    waypointFeatures.forEach((feature) => {
+      bounds.extend(feature.geometry.coordinates);
+    });
+
     map.on("load", () => {
       map.addSource("bike-routes", {
         type: "geojson",
         data: { type: "FeatureCollection", features: routeFeatures },
+      });
+      map.addSource("predefined-routes", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: predefinedFeatures },
+      });
+      map.addSource("named-waypoints", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: waypointFeatures },
+      });
+      map.addLayer({
+        id: "predefined-main-routes",
+        type: "line",
+        source: "predefined-routes",
+        filter: ["==", ["get", "routeType"], "MainRoute"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["to-color", ["get", "color"], "#1d4ed8"],
+          "line-width": 5,
+        },
+      });
+      map.addLayer({
+        id: "predefined-sub-routes",
+        type: "line",
+        source: "predefined-routes",
+        filter: ["==", ["get", "routeType"], "SubRoute"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["to-color", ["get", "color"], "#e76f51"],
+          "line-width": 4,
+          "line-dasharray": [2, 1],
+        },
       });
       map.addLayer({
         id: "bike-routes",
@@ -103,17 +177,28 @@
           "line-width": 5,
         },
       });
-      map.on("click", "bike-routes", (event) => {
+      map.addLayer({
+        id: "named-waypoints",
+        type: "circle",
+        source: "named-waypoints",
+        paint: {
+          "circle-radius": 5,
+          "circle-color": "#e76f51",
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1.5,
+        },
+      });
+      map.on("click", "named-waypoints", (event) => {
         const feature = event.features[0];
         new maplibregl.Popup()
           .setLngLat(event.lngLat)
           .setText(feature.properties.name)
           .addTo(map);
       });
-      map.on("mouseenter", "bike-routes", () => {
+      map.on("mouseenter", "named-waypoints", () => {
         map.getCanvas().style.cursor = "pointer";
       });
-      map.on("mouseleave", "bike-routes", () => {
+      map.on("mouseleave", "named-waypoints", () => {
         map.getCanvas().style.cursor = "";
       });
 

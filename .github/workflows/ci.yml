@@ -83,6 +83,7 @@ jobs:
             webapp_files/.env.example \
             webapp_files/manage.py \
             webapp_files/pyproject.toml \
+            webapp_files/waypoints.json \
             webapp_files/uv.lock \
             webapp_files/biketransit \
             webapp_files/catalog \
