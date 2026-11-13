@@ -2,7 +2,6 @@ import logging
 import time
 import uuid
 
-
 logger = logging.getLogger("catalog.request")
 
 
@@ -19,8 +18,10 @@ class RequestLoggingMiddleware:
 
         duration_ms = (time.perf_counter() - start_time) * 1000
         status_code = response.status_code
-        log_level = logging.ERROR if status_code >= 500 else (
-            logging.WARNING if status_code >= 400 else logging.INFO
+        log_level = (
+            logging.ERROR
+            if status_code >= 500
+            else (logging.WARNING if status_code >= 400 else logging.INFO)
         )
         user = getattr(request, "user", None)
         user_id = user.pk if user is not None and user.is_authenticated else "-"

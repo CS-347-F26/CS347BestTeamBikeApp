@@ -1,6 +1,5 @@
 from contextvars import ContextVar
 
-
 _current_actor = ContextVar("audit_actor", default=None)
 
 

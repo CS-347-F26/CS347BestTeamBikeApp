@@ -372,9 +372,7 @@ class ProfileEditTests(TestCase):
         )
         self.assertEqual(event.actor_username, "rider")
         self.assertEqual(event.actor_user_id, str(self.user.pk))
-        self.assertEqual(
-            event.changes["username"], {"old": "rider", "new": "biker_24"}
-        )
+        self.assertEqual(event.changes["username"], {"old": "rider", "new": "biker_24"})
         self.assertEqual(event.changes["comfortability"], {"old": 0, "new": 3})
 
 
@@ -498,7 +496,9 @@ class RouteLoggingTests(TestCase):
             if getattr(record, "event", None) == "route_loaded"
         ]
         self.assertEqual(len(loaded_routes), Route.objects.count())
-        self.assertTrue(any(record.route_id == self.route.pk for record in loaded_routes))
+        self.assertTrue(
+            any(record.route_id == self.route.pk for record in loaded_routes)
+        )
         self.assertTrue(all(record.source == "map" for record in loaded_routes))
 
 

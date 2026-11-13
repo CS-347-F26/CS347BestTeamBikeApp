@@ -6,26 +6,44 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('catalog', '0004_remove_routewaypoint_unique_waypoint_per_route_and_more'),
+        ("catalog", "0004_remove_routewaypoint_unique_waypoint_per_route_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AuditEvent',
+            name="AuditEvent",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('action', models.CharField(choices=[('create', 'Create'), ('update', 'Update'), ('delete', 'Delete')], max_length=10)),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('actor_user_id', models.CharField(blank=True, max_length=64)),
-                ('actor_username', models.CharField(blank=True, max_length=150)),
-                ('object_type', models.CharField(max_length=100)),
-                ('object_id', models.CharField(max_length=64)),
-                ('object_label', models.CharField(max_length=255)),
-                ('changes', models.JSONField(default=dict)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "action",
+                    models.CharField(
+                        choices=[
+                            ("create", "Create"),
+                            ("update", "Update"),
+                            ("delete", "Delete"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
+                ("actor_user_id", models.CharField(blank=True, max_length=64)),
+                ("actor_username", models.CharField(blank=True, max_length=150)),
+                ("object_type", models.CharField(max_length=100)),
+                ("object_id", models.CharField(max_length=64)),
+                ("object_label", models.CharField(max_length=255)),
+                ("changes", models.JSONField(default=dict)),
             ],
             options={
-                'verbose_name_plural': 'Audit events',
-                'ordering': ['-timestamp', '-id'],
+                "verbose_name_plural": "Audit events",
+                "ordering": ["-timestamp", "-id"],
             },
         ),
     ]

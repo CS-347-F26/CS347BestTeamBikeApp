@@ -15,7 +15,6 @@ from django.views.decorators.http import require_GET
 from .models import User, Route, RouteWaypoint, Location, RouteFeedback
 from .forms import ProfileForm, SignUpForm
 
-
 route_logger = logging.getLogger("catalog.routes")
 health_logger = logging.getLogger("catalog.health")
 

@@ -15,7 +15,6 @@ from .models import (
     Waypoint,
 )
 
-
 EXCLUDED_FIELDS = {"password", "last_login"}
 AUDITED_MANY_TO_MANY = {
     User: ("prev_routes", "saved_routes", "marked_locations"),
@@ -73,9 +72,7 @@ def record_saved_object(sender, instance, created, **kwargs):
     previous = getattr(instance, "_audit_previous_values", None)
 
     if created or previous is None:
-        changes = {
-            name: {"old": None, "new": value} for name, value in current.items()
-        }
+        changes = {name: {"old": None, "new": value} for name, value in current.items()}
         action = AuditEvent.Action.CREATE
     else:
         changes = {
@@ -98,8 +95,7 @@ def record_saved_object(sender, instance, created, **kwargs):
 @receiver(pre_delete, sender=Comment)
 def record_deleted_object(sender, instance, **kwargs):
     changes = {
-        name: {"old": value, "new": None}
-        for name, value in _snapshot(instance).items()
+        name: {"old": value, "new": None} for name, value in _snapshot(instance).items()
     }
     _record(instance, AuditEvent.Action.DELETE, changes)
 
