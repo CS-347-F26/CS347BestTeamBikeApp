@@ -20,6 +20,7 @@ from . import views
 urlpatterns = [
     # App home: /home/
     path("home/", views.index, name="index"),
+    path("healthz/", views.healthz, name="healthz"),
 ]
 
 # Routes (the color-coded bike lines): list and detail

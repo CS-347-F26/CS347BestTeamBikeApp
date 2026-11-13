@@ -231,3 +231,26 @@ class RouteFeedback(models.Model):
 
     def __str__(self):
         return f"{self.route} feedback by {self.user}"
+
+
+class AuditEvent(models.Model):
+    class Action(models.TextChoices):
+        CREATE = "create", "Create"
+        UPDATE = "update", "Update"
+        DELETE = "delete", "Delete"
+
+    action = models.CharField(max_length=10, choices=Action.choices)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    actor_user_id = models.CharField(max_length=64, blank=True)
+    actor_username = models.CharField(max_length=150, blank=True)
+    object_type = models.CharField(max_length=100)
+    object_id = models.CharField(max_length=64)
+    object_label = models.CharField(max_length=255)
+    changes = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ["-timestamp", "-id"]
+        verbose_name_plural = "Audit events"
+
+    def __str__(self):
+        return f"{self.get_action_display()} {self.object_type} {self.object_id}"

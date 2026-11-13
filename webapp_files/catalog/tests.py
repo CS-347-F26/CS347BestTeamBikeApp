@@ -1,9 +1,14 @@
+import json
+from unittest.mock import patch
+
 from django.db import IntegrityError
+from django.db.utils import DatabaseError
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Location, Route, RouteWaypoint, User, Waypoint
+from .models import AuditEvent, Location, Route, RouteWaypoint, User, Waypoint
+from .log_formatters import JSONFormatter
 
 
 class NotFoundPageTests(TestCase):
@@ -288,8 +293,14 @@ class SignUpTests(TestCase):
         self.assertRedirects(
             response, reverse("profile"), fetch_redirect_response=False
         )
-        self.assertTrue(User.objects.filter(username="biker_24").exists())
+        user = User.objects.get(username="biker_24")
         self.assertIn("_auth_user_id", self.client.session)
+        event = AuditEvent.objects.get(
+            object_type="catalog.User",
+            object_id=str(user.pk),
+            action=AuditEvent.Action.CREATE,
+        )
+        self.assertEqual(event.actor_username, "Anonymous")
 
     def test_mismatched_passwords_are_rejected(self):
         response = self.client.post(
@@ -354,6 +365,160 @@ class ProfileEditTests(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.username, "biker_24")
         self.assertEqual(self.user.comfortability, 3)
+        event = AuditEvent.objects.get(
+            object_type="catalog.User",
+            object_id=str(self.user.pk),
+            action=AuditEvent.Action.UPDATE,
+        )
+        self.assertEqual(event.actor_username, "rider")
+        self.assertEqual(event.actor_user_id, str(self.user.pk))
+        self.assertEqual(
+            event.changes["username"], {"old": "rider", "new": "biker_24"}
+        )
+        self.assertEqual(event.changes["comfortability"], {"old": 0, "new": 3})
+
+
+class AuditEventTests(TestCase):
+    def test_create_update_and_delete_are_recorded_without_passwords(self):
+        user = User.objects.create_user(username="rider", password="test-pass-123")
+        user_created = AuditEvent.objects.get(
+            object_type="catalog.User",
+            object_id=str(user.pk),
+            action=AuditEvent.Action.CREATE,
+        )
+        self.assertNotIn("password", user_created.changes)
+
+        location = Location.objects.create(
+            name="Court Square", latitude=38.449, longitude=-78.869
+        )
+        created = AuditEvent.objects.get(
+            object_type="catalog.Location",
+            object_id=str(location.pk),
+            action=AuditEvent.Action.CREATE,
+        )
+        self.assertEqual(created.changes["name"], {"old": None, "new": "Court Square"})
+        self.assertNotIn("password", created.changes)
+
+        location.name = "Updated Square"
+        location.save()
+        updated = AuditEvent.objects.get(
+            object_type="catalog.Location",
+            object_id=str(location.pk),
+            action=AuditEvent.Action.UPDATE,
+        )
+        self.assertEqual(
+            updated.changes["name"],
+            {"old": "Court Square", "new": "Updated Square"},
+        )
+
+        location_id = location.pk
+        location.delete()
+        deleted = AuditEvent.objects.get(
+            object_type="catalog.Location",
+            object_id=str(location_id),
+            action=AuditEvent.Action.DELETE,
+        )
+        self.assertEqual(
+            deleted.changes["name"], {"old": "Updated Square", "new": None}
+        )
+        self.assertEqual(deleted.actor_user_id, "")
+
+    def test_many_to_many_changes_are_recorded(self):
+        route = Route.objects.create(name="Red Line", color="red")
+        location = Location.objects.create(
+            name="Court Square", latitude=38.449, longitude=-78.869
+        )
+
+        route.marked_locations.add(location)
+
+        event = AuditEvent.objects.get(
+            object_type="catalog.Route",
+            object_id=str(route.pk),
+            action=AuditEvent.Action.UPDATE,
+        )
+        self.assertEqual(
+            event.changes["marked_locations"], {"old": [], "new": [location.pk]}
+        )
+
+    def test_audit_events_are_read_only_in_admin(self):
+        admin_user = User.objects.create_superuser(
+            username="admin", password="test-pass-123"
+        )
+        self.client.force_login(admin_user)
+
+        response = self.client.get("/admin/catalog/auditevent/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Audit events")
+        self.assertNotContains(response, "Add audit event")
+
+
+class RequestLoggingTests(TestCase):
+    def test_request_log_includes_status_and_request_id_not_query_string(self):
+        with self.assertLogs("catalog.request", level="INFO") as captured:
+            response = self.client.get("/?token=do-not-log-this")
+
+        self.assertEqual(response.status_code, 200)
+        request_id = response["X-Request-ID"]
+        self.assertTrue(request_id)
+        record = captured.records[0]
+        self.assertEqual(record.event, "http_request")
+        self.assertEqual(record.request_id, request_id)
+        self.assertEqual(record.method, "GET")
+        self.assertEqual(record.path, "/")
+        self.assertEqual(record.status, 200)
+        payload = json.loads(JSONFormatter().format(record))
+        self.assertEqual(payload["event"], "http_request")
+        self.assertNotIn("do-not-log-this", json.dumps(payload))
+
+
+class RouteLoggingTests(TestCase):
+    def setUp(self):
+        self.route = Route.objects.create(name="Red Line", color="red")
+
+    def test_detail_view_logs_loaded_route(self):
+        with self.assertLogs("catalog.routes", level="INFO") as captured:
+            response = self.client.get(reverse("route-detail", args=[self.route.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        record = captured.records[0]
+        self.assertEqual(record.event, "route_loaded")
+        self.assertEqual(record.route_id, self.route.pk)
+        self.assertEqual(record.route_name, "Red Line")
+        self.assertEqual(record.source, "detail")
+
+    def test_map_logs_each_loaded_route(self):
+        with self.assertLogs("catalog.routes", level="INFO") as captured:
+            response = self.client.get(reverse("map"))
+
+        self.assertEqual(response.status_code, 200)
+        loaded_routes = [
+            record
+            for record in captured.records
+            if getattr(record, "event", None) == "route_loaded"
+        ]
+        self.assertEqual(len(loaded_routes), Route.objects.count())
+        self.assertTrue(any(record.route_id == self.route.pk for record in loaded_routes))
+        self.assertTrue(all(record.source == "map" for record in loaded_routes))
+
+
+class HealthCheckTests(TestCase):
+    def test_health_check_reports_database_availability(self):
+        response = self.client.get(reverse("healthz"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    @patch("catalog.views.connection.cursor", side_effect=DatabaseError("offline"))
+    def test_health_check_logs_database_failure(self, _mock_cursor):
+        with self.assertLogs("catalog.health", level="ERROR") as captured:
+            response = self.client.get(reverse("healthz"))
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json(), {"status": "unavailable"})
+        self.assertEqual(captured.records[0].event, "health_check_failed")
+        payload = json.loads(JSONFormatter().format(captured.records[0]))
+        self.assertIn("exception", payload)
 
 
 class ProfileDeleteTests(TestCase):
@@ -377,10 +542,18 @@ class ProfileDeleteTests(TestCase):
 
     def test_post_deletes_account_and_logs_out(self):
         self.client.login(username="rider", password="test-pass-123")
+        user_id = self.user.pk
         response = self.client.post(self.url)
         self.assertRedirects(response, reverse("index"), fetch_redirect_response=False)
         self.assertFalse(User.objects.filter(username="rider").exists())
         self.assertNotIn("_auth_user_id", self.client.session)
+        event = AuditEvent.objects.get(
+            object_type="catalog.User",
+            object_id=str(user_id),
+            action=AuditEvent.Action.DELETE,
+        )
+        self.assertEqual(event.actor_user_id, str(user_id))
+        self.assertEqual(event.actor_username, "rider")
 
 
 class LoginLogoutTests(TestCase):

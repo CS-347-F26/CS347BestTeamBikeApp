@@ -59,8 +59,8 @@ Basic claims B10 - B121
 - I100: Application has in-app documentation
 - I60: Application has data import/export -- export a link to send to your friend to open in-app ala Spotify playlist?
 - I90: Application is mobile-responsive
-- I160: Application has audit trail (helpful for timestamps & route changes)
-- I180: Application has comprehensive logging
+- I160: Application has an audit trail recording who created, changed, or deleted route, waypoint, location, comment, or user data; administrators can review it in Django Admin.
+- I180: Application emits structured JSON request/error logs and route-load events to stdout, adds request IDs and response times, and exposes a database health check at `/healthz/`; deployment log collection and alerting are configured by the hosting platform.
 - I20: Application has search functionality
 - I30: Application has user profiles (comfortability, etc.)
 - I130: Application has data visualization (idk how smart this is of an idea but I love visualization!)

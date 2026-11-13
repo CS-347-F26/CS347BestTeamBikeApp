@@ -1,14 +1,39 @@
+import logging
 from math import isfinite
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
+from django.db import DatabaseError, connection
 from django.db.models import Prefetch
+from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic
 from django.contrib import messages
+from django.db import transaction
+from django.views.decorators.http import require_GET
 
 from .models import User, Route, RouteWaypoint, Location, RouteFeedback
 from .forms import ProfileForm, SignUpForm
+
+
+route_logger = logging.getLogger("catalog.routes")
+health_logger = logging.getLogger("catalog.health")
+
+
+def _log_route_loaded(request, route, source):
+    user = getattr(request, "user", None)
+    user_id = user.pk if user is not None and user.is_authenticated else "-"
+    route_logger.info(
+        "Route loaded",
+        extra={
+            "event": "route_loaded",
+            "request_id": getattr(request, "request_id", "-"),
+            "route_id": route.pk,
+            "route_name": route.name,
+            "source": source,
+            "user_id": user_id,
+        },
+    )
 
 
 def landing(request):
@@ -43,12 +68,23 @@ class RouteListView(generic.ListView):
     model = Route
     template_name = "route_selection.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        for route in context["object_list"]:
+            _log_route_loaded(self.request, route, "list")
+        return context
+
 
 class RouteDetailView(generic.DetailView):
     """One route: /routes/<pk>/"""
 
     model = Route
     template_name = "route_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        _log_route_loaded(self.request, self.object, "detail")
+        return context
 
 
 # --- Route feedback -------------------------------------------------------
@@ -68,6 +104,7 @@ def feedback_form(request, pk):
     """Display the feedback form for a selected route (GET); the same URL
     will accept the submitted form (POST) once the form is built."""
     route = get_object_or_404(Route, pk=pk)
+    _log_route_loaded(request, route, "feedback_form")
     return render(
         request,
         "feedback_form.html",
@@ -78,6 +115,7 @@ def feedback_form(request, pk):
 def post_ride_feedback_prompt(request, pk):
     """Ask whether the user wants to give feedback after completing a route."""
     route = get_object_or_404(Route, pk=pk)
+    _log_route_loaded(request, route, "post_ride_prompt")
     return render(
         request,
         "post_ride_feedback_prompt.html",
@@ -88,6 +126,7 @@ def post_ride_feedback_prompt(request, pk):
 def feedback_confirmation(request, pk):
     """Display confirmation after feedback on a route is submitted."""
     route = get_object_or_404(Route, pk=pk)
+    _log_route_loaded(request, route, "feedback_confirmation")
     return render(
         request,
         "feedback_form_complete_confirmation.html",
@@ -141,6 +180,7 @@ def map_view(request):
     for route in Route.objects.select_related("parent_route").prefetch_related(
         Prefetch("route_waypoints", queryset=route_waypoints)
     ):
+        _log_route_loaded(request, route, "map")
         coordinates = []
         for route_waypoint in route.route_waypoints.all():
             waypoint = route_waypoint.waypoint
@@ -195,6 +235,24 @@ def map_view(request):
     )
 
 
+@require_GET
+def healthz(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except DatabaseError:
+        health_logger.exception(
+            "Database health check failed",
+            extra={
+                "event": "health_check_failed",
+                "request_id": getattr(request, "request_id", "-"),
+            },
+        )
+        return JsonResponse({"status": "unavailable"}, status=503)
+    return JsonResponse({"status": "ok"})
+
+
 def trip_new(request):
     """Trip planner: choose a start and end station (placeholder)."""
     return render(request, "trip_new.html")
@@ -207,6 +265,7 @@ def profile(request):
 
 
 @login_required
+@transaction.atomic
 def profile_edit(request):
     """Let the logged-in rider edit their own profile."""
     if request.method == "POST":
@@ -221,6 +280,7 @@ def profile_edit(request):
 
 
 @login_required
+@transaction.atomic
 def profile_delete(request):
     """Ask for confirmation (GET), then delete the rider's own account (POST)."""
     if request.method == "POST":
@@ -235,6 +295,7 @@ def profile_delete(request):
 # --- Sign up form -------------------------------------------------------
 
 
+@transaction.atomic
 def signup(request):
     """Create a new rider account, then log them in."""
     if request.method == "POST":

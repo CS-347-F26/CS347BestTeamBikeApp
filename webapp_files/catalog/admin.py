@@ -1,7 +1,15 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Comment, Location, Route, RouteWaypoint, User, Waypoint
+from .models import (
+    AuditEvent,
+    Comment,
+    Location,
+    Route,
+    RouteWaypoint,
+    User,
+    Waypoint,
+)
 
 # Register your models here.
 
@@ -53,3 +61,37 @@ class WaypointAdmin(admin.ModelAdmin):
 
 admin.site.register(Location)
 admin.site.register(Comment)
+
+
+@admin.register(AuditEvent)
+class AuditEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "timestamp",
+        "actor_username",
+        "action",
+        "object_type",
+        "object_id",
+        "object_label",
+    )
+    list_filter = ("action", "object_type", "timestamp")
+    search_fields = ("actor_username", "object_type", "object_id", "object_label")
+    date_hierarchy = "timestamp"
+    readonly_fields = (
+        "timestamp",
+        "actor_user_id",
+        "actor_username",
+        "action",
+        "object_type",
+        "object_id",
+        "object_label",
+        "changes",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
