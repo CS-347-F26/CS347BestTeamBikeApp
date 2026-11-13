@@ -1,14 +1,13 @@
-import json
 from math import isfinite
-from pathlib import Path
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
+from django.db.models import Prefetch
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic
 from django.contrib import messages
 
-from .models import User, Route, Location, RouteFeedback
+from .models import User, Route, RouteWaypoint, Location, RouteFeedback
 from .forms import ProfileForm, SignUpForm
 
 
@@ -117,9 +116,8 @@ class LocationDetailView(generic.DetailView):
 
 
 def map_view(request):
-    """Display locations, database routes, and predefined Harrisonburg routes."""
+    """Display locations and route geometry stored in the database."""
     locations = []
-    valid_location_ids = set()
     for location in Location.objects.all():
         if (
             isfinite(location.latitude)
@@ -135,60 +133,51 @@ def map_view(request):
                     "longitude": location.longitude,
                 }
             )
-            valid_location_ids.add(location.pk)
 
-    routes = [
-        {
-            "name": route.name,
-            "color": route.color,
-            "start": [
-                route.start_location.latitude,
-                route.start_location.longitude,
-            ],
-            "end": [route.end_location.latitude, route.end_location.longitude],
-        }
-        for route in Route.objects.select_related("start_location", "end_location")
-        if route.start_location_id in valid_location_ids
-        and route.end_location_id in valid_location_ids
-    ]
-
-    waypoints_path = Path(__file__).resolve().parents[1] / "waypoints.json"
-    with waypoints_path.open(encoding="utf-8") as waypoints_file:
-        route_groups = json.load(waypoints_file)
-
-    predefined_routes = []
     named_waypoints = []
-    for route_group in route_groups:
-        for feature in route_group["features"]:
-            route_name = feature.get("name") or feature.get("type")
-            coordinates = []
-            for point in feature["geometry"]["coordinates"]:
-                longitude, latitude = point[:2]
-                if (
-                    not isfinite(longitude)
-                    or not isfinite(latitude)
-                    or not -180 <= longitude <= 180
-                    or not -90 <= latitude <= 90
-                ):
-                    raise ValueError(
-                        f"Invalid coordinate in predefined route {route_name!r}"
-                    )
+    named_waypoint_ids = set()
+    routes = []
+    route_waypoints = RouteWaypoint.objects.select_related("waypoint").order_by("order")
+    for route in Route.objects.select_related("parent_route").prefetch_related(
+        Prefetch("route_waypoints", queryset=route_waypoints)
+    ):
+        coordinates = []
+        for route_waypoint in route.route_waypoints.all():
+            waypoint = route_waypoint.waypoint
+            longitude = waypoint.longitude
+            latitude = waypoint.latitude
+            if (
+                not isfinite(longitude)
+                or not isfinite(latitude)
+                or not -180 <= longitude <= 180
+                or not -90 <= latitude <= 90
+            ):
+                raise ValueError(
+                    f"Invalid coordinate in route {route.name!r}, "
+                    f"waypoint {waypoint.pk}"
+                )
 
-                coordinates.append([longitude, latitude])
-                if len(point) > 2 and point[2]:
-                    named_waypoints.append(
-                        {
-                            "name": point[2],
-                            "longitude": longitude,
-                            "latitude": latitude,
-                        }
-                    )
+            coordinates.append([longitude, latitude])
+            if waypoint.name.strip() and waypoint.pk not in named_waypoint_ids:
+                named_waypoints.append(
+                    {
+                        "name": waypoint.name.strip(),
+                        "longitude": longitude,
+                        "latitude": latitude,
+                    }
+                )
+                named_waypoint_ids.add(waypoint.pk)
 
-            predefined_routes.append(
+        if len(coordinates) >= 2:
+            routes.append(
                 {
-                    "name": route_name,
-                    "type": feature["geometry"]["type"],
-                    "color": feature["color"].lower(),
+                    "name": route.name,
+                    "color": route.color,
+                    "route_type": route.route_type,
+                    "is_official": route.is_official,
+                    "parent_route": (
+                        route.parent_route.name if route.parent_route_id else None
+                    ),
                     "coordinates": coordinates,
                 }
             )
@@ -200,7 +189,6 @@ def map_view(request):
             "map_data": {
                 "locations": locations,
                 "routes": routes,
-                "predefined_routes": predefined_routes,
                 "named_waypoints": named_waypoints,
             }
         },

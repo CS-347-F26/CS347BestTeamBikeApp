@@ -37,8 +37,8 @@
     <h2 id="route-glossary-title">Route glossary</h2>
     <p>Main routes are solid; dashed subroutes use their main route's color.</p>
     <ul class="route-glossary-list">
-      {% for route in map_data.predefined_routes %}
-        {% if route.type == "MainRoute" %}
+      {% for route in map_data.routes %}
+        {% if route.is_official and route.route_type == "main" %}
           <li>
             <strong>{{ route.name }}</strong> —
             {% if route.color == "yellow" %}
@@ -65,16 +65,24 @@
       zoom: 13,
     });
     const bounds = new maplibregl.LngLatBounds();
-    const routeFeatures = [];
+    const routeFeatures = mapData.routes.map((route) => ({
+      type: "Feature",
+      properties: {
+        name: route.name,
+        routeType: route.route_type,
+        color: route.color,
+      },
+      geometry: { type: "LineString", coordinates: route.coordinates },
+    }));
     const isValidPoint = (point) =>
       Array.isArray(point) &&
       point.length === 2 &&
       Number.isFinite(point[0]) &&
       Number.isFinite(point[1]) &&
-      point[0] >= -90 &&
-      point[0] <= 90 &&
-      point[1] >= -180 &&
-      point[1] <= 180;
+      point[0] >= -180 &&
+      point[0] <= 180 &&
+      point[1] >= -90 &&
+      point[1] <= 90;
 
     map.addControl(new maplibregl.NavigationControl(), "top-left");
     map.on("error", () => {
@@ -91,29 +99,6 @@
       bounds.extend(point);
     });
 
-    mapData.routes.forEach((route) => {
-      if (!isValidPoint(route.start) || !isValidPoint(route.end)) return;
-
-      const start = [route.start[1], route.start[0]];
-      const end = [route.end[1], route.end[0]];
-      routeFeatures.push({
-        type: "Feature",
-        properties: { name: route.name, color: route.color },
-        geometry: { type: "LineString", coordinates: [start, end] },
-      });
-      bounds.extend(start);
-      bounds.extend(end);
-    });
-
-    const predefinedFeatures = mapData.predefined_routes.map((route) => ({
-      type: "Feature",
-      properties: {
-        name: route.name,
-        routeType: route.type,
-        color: route.color,
-      },
-      geometry: { type: "LineString", coordinates: route.coordinates },
-    }));
     const waypointFeatures = mapData.named_waypoints.map((waypoint) => ({
       type: "Feature",
       properties: { name: waypoint.name },
@@ -123,7 +108,7 @@
       },
     }));
 
-    predefinedFeatures.forEach((feature) => {
+    routeFeatures.forEach((feature) => {
       feature.geometry.coordinates.forEach((point) => bounds.extend(point));
     });
 
@@ -136,19 +121,15 @@
         type: "geojson",
         data: { type: "FeatureCollection", features: routeFeatures },
       });
-      map.addSource("predefined-routes", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: predefinedFeatures },
-      });
       map.addSource("named-waypoints", {
         type: "geojson",
         data: { type: "FeatureCollection", features: waypointFeatures },
       });
       map.addLayer({
-        id: "predefined-main-routes",
+        id: "main-routes",
         type: "line",
-        source: "predefined-routes",
-        filter: ["==", ["get", "routeType"], "MainRoute"],
+        source: "bike-routes",
+        filter: ["==", ["get", "routeType"], "main"],
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": ["to-color", ["get", "color"], "#1d4ed8"],
@@ -156,25 +137,15 @@
         },
       });
       map.addLayer({
-        id: "predefined-sub-routes",
+        id: "sub-routes",
         type: "line",
-        source: "predefined-routes",
-        filter: ["==", ["get", "routeType"], "SubRoute"],
+        source: "bike-routes",
+        filter: ["==", ["get", "routeType"], "subroute"],
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": ["to-color", ["get", "color"], "#e76f51"],
           "line-width": 4,
           "line-dasharray": [2, 1],
-        },
-      });
-      map.addLayer({
-        id: "bike-routes",
-        type: "line",
-        source: "bike-routes",
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": ["to-color", ["get", "color"], "#2d6a4f"],
-          "line-width": 5,
         },
       });
       map.addLayer({

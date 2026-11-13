@@ -1,4 +1,5 @@
 from django.db import IntegrityError
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
@@ -70,9 +71,7 @@ class UrlRoutingTests(TestCase):
                 self.assertEqual(reverse(name, args=args), path)
 
     def test_route_get_absolute_url(self):
-        self.assertEqual(
-            self.route.get_absolute_url(), f"/routes/{self.route.pk}/"
-        )
+        self.assertEqual(self.route.get_absolute_url(), f"/routes/{self.route.pk}/")
 
     def test_root_shows_landing_page(self):
         response = self.client.get("/")
@@ -137,29 +136,36 @@ class UrlRoutingTests(TestCase):
 
 
 class MapViewTests(TestCase):
-    def test_map_includes_locations_and_straight_route_endpoints(self):
+    def test_map_uses_ordered_database_waypoints(self):
         start = Location.objects.create(
             name="Court Square", latitude=38.449, longitude=-78.869
         )
         end = Location.objects.create(
             name="JMU Quad", latitude=38.438, longitude=-78.871
         )
-        Route.objects.create(
+        route = Route.objects.create(
             name="Red Line",
             color="red",
+            is_official=False,
             start_location=start,
             end_location=end,
         )
+        first = Waypoint.objects.create(
+            name="Court Square", latitude=38.449, longitude=-78.869
+        )
+        middle = Waypoint.objects.create(latitude=38.443, longitude=-78.870)
+        last = Waypoint.objects.create(
+            name="JMU Quad", latitude=38.438, longitude=-78.871
+        )
+        RouteWaypoint.objects.create(route=route, waypoint=last, order=2)
+        RouteWaypoint.objects.create(route=route, waypoint=first, order=0)
+        RouteWaypoint.objects.create(route=route, waypoint=middle, order=1)
 
         response = self.client.get(reverse("map"))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="bike-map"')
         self.assertContains(response, "Route glossary")
-        self.assertContains(
-            response,
-            "Main routes are solid; dashed subroutes use their main route's color.",
-        )
         self.assertContains(response, "min-height: 360px")
         self.assertContains(response, "tiles.openfreemap.org/styles/liberty")
         self.assertContains(response, "maplibre-gl@6.17.0")
@@ -183,44 +189,34 @@ class MapViewTests(TestCase):
             ],
         )
         self.assertEqual(
-            map_data["routes"],
-            [
-                {
-                    "name": "Red Line",
-                    "color": "red",
-                    "start": [38.449, -78.869],
-                    "end": [38.438, -78.871],
-                }
-            ],
+            next(route for route in map_data["routes"] if route["name"] == "Red Line"),
+            {
+                "name": "Red Line",
+                "color": "red",
+                "route_type": "main",
+                "is_official": False,
+                "parent_route": None,
+                "coordinates": [
+                    [-78.869, 38.449],
+                    [-78.870, 38.443],
+                    [-78.871, 38.438],
+                ],
+            },
         )
-        self.assertEqual(
-            [route["name"] for route in map_data["predefined_routes"]],
-            [
-                "West Side",
-                "West Side Emu Subroute",
-                "Friendly City Trail",
-                "Brewery Loop",
-                "Pleasant Hill",
-                "Pleasant Hill Chestnut Subroute",
-                "Pleasant Hill Butler Subroute",
-                "Memorial",
-                "Memorial Westover Subroute",
-                "Memorial Ice House Subroute",
-            ],
+        west_side = next(
+            route for route in map_data["routes"] if route["name"] == "West Side"
         )
-        west_side = map_data["predefined_routes"][0]
-        self.assertEqual(west_side["name"], "West Side")
-        self.assertEqual(west_side["type"], "MainRoute")
+        self.assertEqual(west_side["route_type"], "main")
         self.assertEqual(west_side["color"], "green")
         self.assertEqual(west_side["coordinates"][0], [-78.8824499, 38.482479])
         self.assertEqual(west_side["coordinates"][-1], [-78.9007344, 38.4342646])
-        self.assertEqual(map_data["predefined_routes"][2]["color"], "yellow")
-        self.assertEqual(map_data["predefined_routes"][1]["color"], "green")
         self.assertContains(response, 'style="color: green"')
         self.assertContains(response, 'style="color: #806000"')
-        glossary = response.content.decode().split(
-            '<section class="route-glossary"', 1
-        )[1].split("</section>", 1)[0]
+        glossary = (
+            response.content.decode()
+            .split('<section class="route-glossary"', 1)[1]
+            .split("</section>", 1)[0]
+        )
         for route_name in (
             "West Side",
             "Friendly City Trail",
@@ -230,6 +226,7 @@ class MapViewTests(TestCase):
         ):
             self.assertIn(route_name, glossary)
         self.assertNotIn("Subroute", glossary)
+        self.assertNotIn("West Side Emu", glossary)
         self.assertIn(
             {
                 "name": "Willow Run Rd",
@@ -238,12 +235,37 @@ class MapViewTests(TestCase):
             },
             map_data["named_waypoints"],
         )
+        self.assertIn(
+            {
+                "name": "Court Square",
+                "longitude": -78.869,
+                "latitude": 38.449,
+            },
+            map_data["named_waypoints"],
+        )
+        self.assertTrue(
+            all(waypoint["name"] for waypoint in map_data["named_waypoints"])
+        )
         self.assertTrue(
             all(
                 len(point) == 2
-                for route in map_data["predefined_routes"]
+                for route in map_data["routes"]
                 for point in route["coordinates"]
             )
+        )
+
+    def test_official_routes_and_subroute_parents_are_seeded(self):
+        routes = Route.objects.filter(is_official=True)
+
+        self.assertEqual(routes.count(), 10)
+        west_side = routes.get(name="West Side")
+        emu_subroute = routes.get(name="West Side Emu Subroute")
+        self.assertEqual(west_side.route_type, Route.Type.MAIN)
+        self.assertEqual(emu_subroute.route_type, Route.Type.SUBROUTE)
+        self.assertEqual(emu_subroute.parent_route, west_side)
+        self.assertGreater(west_side.route_waypoints.count(), 1)
+        self.assertEqual(
+            west_side.route_waypoints.first().waypoint.name, "Willow Run Rd"
         )
 
 
@@ -448,8 +470,7 @@ class LandmarkTests(TestCase):
 
 
 class WaypointModelTests(TestCase):
-    """Waypoints keep a per-route order, and one waypoint can sit at a
-    different index on each route it belongs to."""
+    """Waypoints keep an order on each route, including repeated loop points."""
 
     @classmethod
     def setUpTestData(cls):
@@ -480,7 +501,32 @@ class WaypointModelTests(TestCase):
         RouteWaypoint.objects.create(route=self.green, waypoint=self.second, order=0)
         self.assertCountEqual(self.second.routes.all(), [self.red, self.green])
 
+    def test_loop_route_can_repeat_a_waypoint(self):
+        RouteWaypoint.objects.create(route=self.red, waypoint=self.first, order=2)
+        waypoints = [rw.waypoint for rw in self.red.route_waypoints.all()]
+        self.assertEqual(waypoints, [self.first, self.second, self.first])
+
     def test_duplicate_order_on_route_rejected(self):
         extra = Waypoint.objects.create(latitude=38.46, longitude=-78.85)
         with self.assertRaises(IntegrityError):
             RouteWaypoint.objects.create(route=self.red, waypoint=extra, order=0)
+
+
+class RouteMetadataTests(TestCase):
+    def test_subroute_parent_must_be_a_main_route(self):
+        main_route = Route.objects.create(name="Main", color="green")
+        subroute = Route.objects.create(
+            name="Subroute",
+            color="green",
+            route_type=Route.Type.SUBROUTE,
+            parent_route=main_route,
+        )
+        nested_subroute = Route(
+            name="Nested subroute",
+            color="green",
+            route_type=Route.Type.SUBROUTE,
+            parent_route=subroute,
+        )
+
+        with self.assertRaises(ValidationError):
+            nested_subroute.full_clean()

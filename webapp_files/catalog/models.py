@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
 
 # Models follow the team whiteboard (bookkeeping/images/DataModel.jpeg).
@@ -50,17 +52,41 @@ class Location(models.Model):
 
 class Route(models.Model):
     """A color-coded bike line, like a transit line (e.g. 'Red Line').
-    Comments on a route are available as `route.comments`."""
+    Ordered geometry is stored in `route.route_waypoints`; comments are
+    available as `route.comments`."""
+
+    class Type(models.TextChoices):
+        MAIN = "main", "Main route"
+        SUBROUTE = "subroute", "Subroute"
 
     # Fields
     name = models.CharField(max_length=100)
     color = models.CharField(max_length=30)
-    # PROTECT stops a location from being deleted while a route still uses it.
+    is_official = models.BooleanField(default=True)
+    route_type = models.CharField(
+        max_length=10, choices=Type.choices, default=Type.MAIN
+    )
+    parent_route = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        related_name="subroutes",
+        blank=True,
+        null=True,
+    )
+    # Optional legacy endpoint references; route geometry comes from waypoints.
     start_location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, related_name="routes_starting_here"
+        Location,
+        on_delete=models.PROTECT,
+        related_name="routes_starting_here",
+        blank=True,
+        null=True,
     )
     end_location = models.ForeignKey(
-        Location, on_delete=models.PROTECT, related_name="routes_ending_here"
+        Location,
+        on_delete=models.PROTECT,
+        related_name="routes_ending_here",
+        blank=True,
+        null=True,
     )
     marked_locations = models.ManyToManyField(
         Location, blank=True, related_name="routes"
@@ -72,11 +98,27 @@ class Route(models.Model):
     # Metadata
     class Meta:
         ordering = ["name"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(route_type="main", parent_route__isnull=True)
+                    | Q(route_type="subroute", parent_route__isnull=False)
+                ),
+                name="route_parent_matches_type",
+            )
+        ]
 
     # Methods
     def get_absolute_url(self):
         """Returns the URL to access a particular route."""
         return reverse("route-detail", args=[str(self.id)])
+
+    def clean(self):
+        super().clean()
+        if self.parent_route_id and self.parent_route.route_type != self.Type.MAIN:
+            raise ValidationError(
+                {"parent_route": "A subroute's parent must be a main route."}
+            )
 
     def __str__(self):
         """String for representing the Route object (in Admin site etc.)."""
@@ -92,6 +134,7 @@ class Waypoint(models.Model):
     `route.route_waypoints` to get them in order."""
 
     # Fields (id is Django's automatic integer primary key)
+    name = models.CharField(max_length=150, blank=True, default="")
     routes = models.ManyToManyField(
         Route, through="RouteWaypoint", related_name="waypoints", blank=True
     )
@@ -104,7 +147,7 @@ class Waypoint(models.Model):
     # Methods
     def __str__(self):
         """String for representing the Waypoint object (in Admin site etc.)."""
-        return f"Waypoint {self.id} ({self.latitude}, {self.longitude})"
+        return self.name or f"Waypoint {self.id} ({self.latitude}, {self.longitude})"
 
 
 class RouteWaypoint(models.Model):
@@ -127,10 +170,6 @@ class RouteWaypoint(models.Model):
             # No two waypoints share an index on the same route...
             models.UniqueConstraint(
                 fields=["route", "order"], name="unique_waypoint_order_per_route"
-            ),
-            # ...and a waypoint appears at most once per route.
-            models.UniqueConstraint(
-                fields=["route", "waypoint"], name="unique_waypoint_per_route"
             ),
         ]
 

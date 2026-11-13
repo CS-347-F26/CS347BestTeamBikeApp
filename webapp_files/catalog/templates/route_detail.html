@@ -7,13 +7,27 @@
 
   <p><strong>Color:</strong> {{ route.color }}</p>
   <p>
-    <strong>From</strong>
-    <a href="{% url 'location-detail' route.start_location.pk %}">{{ route.start_location.name }}</a>
-    <strong>to</strong>
-    <a href="{% url 'location-detail' route.end_location.pk %}">{{ route.end_location.name }}</a>
+    <strong>Route type:</strong> {{ route.get_route_type_display }}
+    {% if route.parent_route %}
+      (part of <a href="{{ route.parent_route.get_absolute_url }}">{{ route.parent_route.name }}</a>)
+    {% endif %}
   </p>
-
-  <!-- Stops, comments and ratings will go here -->
+  <p><strong>Route status:</strong> {% if route.is_official %}Official{% else %}User-made{% endif %}</p>
+  <h2>Waypoints</h2>
+  <ol>
+    {% for route_waypoint in route.route_waypoints.all %}
+      <li>
+        {% if route_waypoint.waypoint.name %}
+          {{ route_waypoint.waypoint.name }}
+        {% else %}
+          Waypoint
+        {% endif %}
+        ({{ route_waypoint.waypoint.latitude }}, {{ route_waypoint.waypoint.longitude }})
+      </li>
+    {% empty %}
+      <li>No waypoints have been added to this route.</li>
+    {% endfor %}
+  </ol>
 
   <a href="{% url 'feedback-form' route.pk %}">Give feedback on this route</a>
 {% endblock %}
