@@ -385,6 +385,41 @@ class LandmarkTests(TestCase):
                 self.assertContains(response, "<nav")
                 self.assertContains(response, "<main")
 
+    def test_nav_marks_current_section(self):
+        """The hamburger link for the page's section is the active pill. Pages
+        that also have a bottom-bar shortcut mark that one too, so
+        aria-current appears once per nav."""
+        cases = {
+            "index": ("Home", 2),
+            "map": ("Map", 2),
+            "route-list": ("Routes", 2),
+            "trip-new": ("Plan a trip", 1),
+        }
+        for name, (label, count) in cases.items():
+            with self.subTest(name=name):
+                url = reverse(name)
+                html = self.client.get(url).content.decode()
+                self.assertIn(
+                    f'<a class="nav-link active" aria-current="page" href="{url}">{label}</a>',
+                    html,
+                )
+                self.assertEqual(html.count('aria-current="page"'), count)
+
+    def test_tab_bar_shows_log_in_or_profile(self):
+        """The bottom bar's 4th button is Log in (back to this page after)
+        when logged out, and Profile when logged in."""
+        url = reverse("map")
+        html = self.client.get(url).content.decode()
+        self.assertIn(f'href="{reverse("login")}?next={url}">', html)
+        self.assertIn("<span>Log in</span>", html)
+        self.assertNotIn("<span>Profile</span>", html)
+
+        User.objects.create_user(username="tabber", password="test-pass-123")
+        self.client.login(username="tabber", password="test-pass-123")
+        html = self.client.get(url).content.decode()
+        self.assertIn("<span>Profile</span>", html)
+        self.assertNotIn("<span>Log in</span>", html)
+
 
 class WaypointModelTests(TestCase):
     """Waypoints keep a per-route order, and one waypoint can sit at a
