@@ -77,6 +77,9 @@ class UrlRoutingTests(TestCase):
             ("map", ()): "/map/",
             ("trip-new", ()): "/trips/new/",
             ("profile", ()): "/profile/",
+            ("profile-feedback-list", ()): "/profile/feedback/",
+            ("profile-feedback-edit", (7,)): "/profile/feedback/7/edit/",
+            ("profile-feedback-delete", (7,)): "/profile/feedback/7/delete/",
             ("login", ()): "/accounts/login/",
         }
         for (name, args), path in expected.items():
@@ -883,6 +886,103 @@ class ProfilePageTests(TestCase):
         self.assertIn("Comfort 4/5", html)
         self.assertIn("Smooth ride", html)
         self.assertNotIn("No saved routes yet.", html)
+        self.assertIn(f'href="{reverse("profile-feedback-list")}"', html)
+        self.assertIn("See all feedback (1)", html)
+
+
+class ProfileFeedbackTests(TestCase):
+    """A rider can list, edit and delete their own route feedback from the
+    profile, but never someone else's."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="rider", password="test-pass-123")
+        cls.other = User.objects.create_user(username="other", password="test-pass-123")
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        cls.route = Route.objects.create(
+            name="Red", color="Red", start_location=start, end_location=end
+        )
+
+    def setUp(self):
+        self.mine = RouteFeedback.objects.create(
+            user=self.user, route=self.route, comfort_rating=2, text="Busy road"
+        )
+        self.theirs = RouteFeedback.objects.create(
+            user=self.other, route=self.route, comfort_rating=5, text="Not yours"
+        )
+        self.client.login(username="rider", password="test-pass-123")
+
+    def test_pages_require_login(self):
+        self.client.logout()
+        for url in (
+            reverse("profile-feedback-list"),
+            reverse("profile-feedback-edit", args=[self.mine.pk]),
+            reverse("profile-feedback-delete", args=[self.mine.pk]),
+        ):
+            with self.subTest(url=url):
+                self.assertRedirects(
+                    self.client.get(url),
+                    f"{reverse('login')}?next={url}",
+                    fetch_redirect_response=False,
+                )
+
+    def test_list_shows_only_my_feedback(self):
+        response = self.client.get(reverse("profile-feedback-list"))
+        self.assertContains(response, "Busy road")
+        self.assertContains(response, "Comfort 2/5")
+        self.assertContains(
+            response, reverse("profile-feedback-edit", args=[self.mine.pk])
+        )
+        self.assertNotContains(response, "Not yours")
+
+    def test_list_empty_state(self):
+        self.mine.delete()
+        response = self.client.get(reverse("profile-feedback-list"))
+        self.assertContains(response, "You haven't given feedback yet.")
+
+    def test_edit_form_is_prefilled(self):
+        url = reverse("profile-feedback-edit", args=[self.mine.pk])
+        html = self.client.get(url).content.decode()
+        self.assertIn("Edit feedback", html)
+        self.assertIn("Save changes", html)
+        self.assertRegex(html, r'value="2"[^>]*checked')
+        self.assertIn("Busy road</textarea>", html)
+        self.assertNotIn("thanks-modal", html)
+
+    def test_edit_saves_changes(self):
+        url = reverse("profile-feedback-edit", args=[self.mine.pk])
+        response = self.client.post(url, {"comfort_rating": "4", "text": "Better now"})
+        self.assertRedirects(response, reverse("profile-feedback-list"))
+        self.mine.refresh_from_db()
+        self.assertEqual((self.mine.comfort_rating, self.mine.text), (4, "Better now"))
+        self.assertEqual((self.mine.user, self.mine.route), (self.user, self.route))
+
+    def test_edit_rejects_bad_rating(self):
+        url = reverse("profile-feedback-edit", args=[self.mine.pk])
+        response = self.client.post(url, {"comfort_rating": "9", "text": "x"})
+        self.assertEqual(response.status_code, 200)
+        self.mine.refresh_from_db()
+        self.assertEqual(self.mine.comfort_rating, 2)
+
+    def test_delete_confirms_then_deletes(self):
+        url = reverse("profile-feedback-delete", args=[self.mine.pk])
+        self.assertContains(self.client.get(url), "Delete this feedback?")
+        self.assertTrue(RouteFeedback.objects.filter(pk=self.mine.pk).exists())
+        response = self.client.post(url)
+        self.assertRedirects(response, reverse("profile-feedback-list"))
+        self.assertFalse(RouteFeedback.objects.filter(pk=self.mine.pk).exists())
+        self.assertTrue(RouteFeedback.objects.filter(pk=self.theirs.pk).exists())
+
+    def test_other_users_and_missing_feedback_404(self):
+        for name in ("profile-feedback-edit", "profile-feedback-delete"):
+            for pk in (self.theirs.pk, 9999):
+                with self.subTest(name=name, pk=pk):
+                    url = reverse(name, args=[pk])
+                    self.assertEqual(self.client.get(url).status_code, 404)
+                    self.assertEqual(self.client.post(url).status_code, 404)
+        self.theirs.refresh_from_db()
+        self.assertEqual(self.theirs.comfort_rating, 5)
 
 
 class PasswordChangePageTests(TestCase):

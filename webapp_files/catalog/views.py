@@ -318,6 +318,60 @@ def profile_delete(request):
     return render(request, "profile_confirm_delete.html")
 
 
+# --- The rider's own feedback (list / edit / delete) ----------------------
+# Feedback is created on the route's feedback form (feedback_form above).
+# These views let a rider manage what they wrote from their profile.
+# Each lookup filters on user=request.user, so opening someone else's
+# feedback gives a 404 (we don't even reveal that it exists).
+
+
+@login_required
+def profile_feedback_list(request):
+    """All feedback the logged-in rider has left, newest first."""
+    feedback_list = request.user.route_feedback.select_related("route")
+    return render(
+        request, "profile_feedback_list.html", {"feedback_list": feedback_list}
+    )
+
+
+@login_required
+def profile_feedback_edit(request, pk):
+    """Edit one of your own feedback entries. Reuses the feedback form page."""
+    feedback = get_object_or_404(
+        RouteFeedback.objects.select_related("route"), pk=pk, user=request.user
+    )
+    if request.method == "POST":
+        form = RouteFeedbackForm(request.POST, instance=feedback)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Your feedback on {feedback.route} was updated.")
+            return redirect("profile-feedback-list")
+    else:
+        form = RouteFeedbackForm(instance=feedback)
+    return render(
+        request,
+        "feedback_form.html",
+        {"route": feedback.route, "form": form, "feedback": feedback},
+    )
+
+
+@login_required
+def profile_feedback_delete(request, pk):
+    """Ask for confirmation (GET), then delete one of your own feedback
+    entries (POST)."""
+    feedback = get_object_or_404(
+        RouteFeedback.objects.select_related("route"), pk=pk, user=request.user
+    )
+    if request.method == "POST":
+        route = feedback.route
+        feedback.delete()
+        messages.success(request, f"Your feedback on {route} was deleted.")
+        return redirect("profile-feedback-list")
+    return render(
+        request, "profile_feedback_confirm_delete.html", {"feedback": feedback}
+    )
+
+
 # --- Sign up form -------------------------------------------------------
 
 

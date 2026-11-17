@@ -70,6 +70,7 @@
             </li>
           {% endfor %}
         </ul>
+        <a class="pf-see-all" href="{% url 'profile-feedback-list' %}">See all feedback ({{ feedback_count }})<span class="pf-chevron" aria-hidden="true">&rsaquo;</span></a>
       {% else %}
         <p class="pf-empty">You haven't given feedback yet. <a href="{% url 'feedback-route-selection' %}">Give feedback</a></p>
       {% endif %}

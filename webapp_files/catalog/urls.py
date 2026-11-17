@@ -75,6 +75,22 @@ urlpatterns += [
     path("profile/", views.profile, name="profile"),
     path("profile/edit/", views.profile_edit, name="profile-edit"),
     path("profile/delete/", views.profile_delete, name="profile-delete"),
+    # The rider's own route feedback (created on routes/<pk>/feedback/)
+    path(
+        "profile/feedback/",
+        views.profile_feedback_list,
+        name="profile-feedback-list",
+    ),
+    path(
+        "profile/feedback/<int:pk>/edit/",
+        views.profile_feedback_edit,
+        name="profile-feedback-edit",
+    ),
+    path(
+        "profile/feedback/<int:pk>/delete/",
+        views.profile_feedback_delete,
+        name="profile-feedback-delete",
+    ),
 ]
 
 # Account creation
