@@ -11,8 +11,9 @@ assert (
     _this_dir / "models.py"
 ).exists(), "catalog/urls.py should have a sibling named models.py"
 
-from django.urls import path
+from django.urls import path, include
 from . import views
+from catalog.views import service_worker
 
 # These paths are mounted at the domain root (see biketransit/urls.py).
 # Conventions: plural nouns for collections (routes/, locations/), <int:pk>
@@ -96,4 +97,9 @@ urlpatterns += [
 # Account creation
 urlpatterns += [
     path("signup/", views.signup, name="signup"),
+]
+
+# Mobile/PWA implementation
+urlpatterns += [
+    path("service-worker.js", service_worker, name="service-worker"),
 ]

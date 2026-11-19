@@ -11,6 +11,8 @@ from django.views import generic
 from django.contrib import messages
 from django.db import transaction
 from django.views.decorators.http import require_GET
+from django.http import HttpResponse
+from pathlib import Path
 
 from .models import User, Route, RouteWaypoint, Location, RouteFeedback
 from .forms import ProfileForm, RouteFeedbackForm, RouteSearchForm, SignUpForm
@@ -438,3 +440,19 @@ def signup(request):
     else:
         form = SignUpForm()
     return render(request, "registration/signup.html", {"form": form})
+
+@require_GET
+def service_worker(request):
+    worker_path = (
+        Path(__file__).resolve().parent
+        / "static"
+        / "catalog"
+        / "js"
+        / "service-worker.js"
+    )
+
+    return HttpResponse(
+        worker_path.read_text(),
+        content_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/"},
+    )
