@@ -13,6 +13,53 @@
     <h1>Routes</h1>
   </header>
 
+  {# Search + comfort filter (claim I20). A plain GET form, so the view #}
+  {# filters on the server and the results URL can be shared/bookmarked. #}
+  <form class="route-search" method="get" action="{% url 'route-list' %}" role="search">
+    <div class="route-search-bar">
+      <label class="visually-hidden" for="{{ form.q.id_for_label }}">{{ form.q.label }}</label>
+      <input type="search" name="q" id="{{ form.q.id_for_label }}" value="{{ query }}"
+             maxlength="100" placeholder="Search" autocomplete="off">
+      <button type="submit" class="route-search-btn">Search</button>
+      <button type="button" class="route-search-btn route-filter-toggle"
+              data-bs-toggle="collapse" data-bs-target="#comfort-filter"
+              aria-controls="comfort-filter" aria-expanded="{% if min_comfort %}true{% else %}false{% endif %}">
+        Filter{% if min_comfort %} <span class="route-filter-badge">{{ min_comfort }}+<span class="visually-hidden"> comfort</span></span>{% endif %}
+      </button>
+    </div>
+
+    {# Drops down under the bar (Bootstrap Collapse); open while a filter is on. #}
+    <div class="collapse{% if min_comfort %} show{% endif %}" id="comfort-filter">
+      <fieldset class="comfort-filter">
+        <legend>{{ form.comfort.label }}</legend>
+        <p class="comfort-filter-hint">Show routes at least this comfortable.</p>
+        {# Real radio buttons drawn as circles on a line. #}
+        <div class="comfort-line">
+          {% for radio in form.comfort %}
+            {{ radio.tag }}
+            <label for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+          {% endfor %}
+        </div>
+        <div class="comfort-line-scale" aria-hidden="true">
+          <span>Less comfy</span>
+          <span>More comfy</span>
+        </div>
+        <p class="visually-hidden">1 means very uncomfortable and 5 means very comfortable.</p>
+        <div class="comfort-filter-actions">
+          <button type="submit" class="route-search-btn">Apply</button>
+          <a class="comfort-filter-clear" href="{% url 'route-list' %}">Clear</a>
+        </div>
+      </fieldset>
+    </div>
+  </form>
+
+  {% if is_filtered %}
+    <p class="route-search-summary">
+      Showing {{ route_list|length }} route{{ route_list|length|pluralize }}{% if query %} matching “{{ query }}”{% endif %}{% if min_comfort %} with comfort {{ min_comfort }}+{% endif %}.
+      <a href="{% url 'route-list' %}">Clear</a>
+    </p>
+  {% endif %}
+
   {# One row per route: name | comfort rating | comments button. #}
   {# The row's colors come from its route-color--<color> class in main.css. #}
   <ul class="route-rows">
@@ -26,6 +73,12 @@
         <a class="route-comments" href="{{ route.get_absolute_url }}">Comments</a>
       </li>
     {% empty %}
+     {% if is_filtered %}
+      <li class="route-rows-empty">
+        No routes match your search.
+        <a href="{% url 'route-list' %}">Show all routes</a>
+      </li>
+     {% else %}
       {# Example rows, shown only while the database has no routes. #}
       {# Delete this block once real routes are added. Their Comments links #}
       {# point at route ids 1-6, which don't exist yet (they show the 404 page). #}
@@ -77,6 +130,7 @@
         </span>
         <a class="route-comments" href="{% url 'route-detail' 6 %}">Comments</a>
       </li>
+     {% endif %}
     {% endfor %}
   </ul>
 {% endblock %}
