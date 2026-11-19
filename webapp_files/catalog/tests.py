@@ -756,6 +756,71 @@ class RouteListPageTests(TestCase):
         self.assertEqual(html.count("Comfort rating"), 1)
 
 
+class RouteSearchTests(TestCase):
+    """Claim I20: the routes page's search box (?q=) matches route names or
+    colors, and the comfort filter (?comfort=n) keeps routes rated n or more."""
+
+    def setUp(self):
+        _delete_all_routes()
+        for name, color, comfort in (
+            ("Red", "Red", 3),
+            ("Blue", "Blue", 5),
+            ("Purple", "Purple", 1),
+            ("Memorial", "Maroon", 0),  # not rated yet
+        ):
+            Route.objects.create(name=name, color=color, comfortability=comfort)
+
+    def names(self, **params):
+        response = self.client.get(reverse("route-list"), params)
+        self.assertEqual(response.status_code, 200)
+        return [route.name for route in response.context["route_list"]]
+
+    def test_no_search_shows_every_route(self):
+        self.assertEqual(self.names(), ["Blue", "Memorial", "Purple", "Red"])
+
+    def test_search_matches_name_in_any_case(self):
+        self.assertEqual(self.names(q="red"), ["Red"])
+        self.assertEqual(self.names(q="RED"), ["Red"])
+        self.assertEqual(self.names(q="mem"), ["Memorial"])
+
+    def test_search_matches_color(self):
+        self.assertEqual(self.names(q="maroon"), ["Memorial"])
+
+    def test_no_match_shows_message_not_example_rows(self):
+        html = self.client.get(reverse("route-list"), {"q": "zzz"}).content.decode()
+        self.assertIn("No routes match your search.", html)
+        self.assertNotIn('<span class="route-name">', html)
+
+    def test_comfort_filter_is_a_minimum(self):
+        self.assertEqual(self.names(comfort=3), ["Blue", "Red"])
+        self.assertEqual(self.names(comfort=1), ["Blue", "Purple", "Red"])
+
+    def test_search_and_filter_combine(self):
+        self.assertEqual(self.names(q="blue", comfort=3), ["Blue"])
+        self.assertEqual(self.names(q="purple", comfort=3), [])
+
+    def test_bad_comfort_value_is_ignored(self):
+        everything = ["Blue", "Memorial", "Purple", "Red"]
+        self.assertEqual(self.names(comfort=9), everything)
+        self.assertEqual(self.names(comfort="abc"), everything)
+
+    def test_page_has_search_box_and_five_comfort_circles(self):
+        html = self.client.get(reverse("route-list")).content.decode()
+        self.assertIn('role="search"', html)
+        self.assertIn('type="search" name="q"', html)
+        self.assertIn('aria-controls="comfort-filter"', html)
+        self.assertEqual(html.count('name="comfort"'), 5)
+
+    def test_choices_are_kept_after_submit(self):
+        html = self.client.get(
+            reverse("route-list"), {"q": "blue", "comfort": 4}
+        ).content.decode()
+        self.assertIn('value="blue"', html)
+        self.assertRegex(html, r'value="4"[^>]*checked')
+        self.assertIn('class="collapse show"', html)  # panel stays open
+        self.assertIn("4+", html)  # badge on the Filter button
+
+
 class FeedbackRouteSelectionPageTests(TestCase):
     """The feedback page lists routes as rows that each link to that
     route's feedback form, or example rows while there are no routes."""

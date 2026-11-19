@@ -59,3 +59,222 @@
   background-color: var(--color-primary);
   color: #fff;
 }
+
+/* --- Search + comfort filter (claim I20) --------------------------------
+   Sits between the title band and the rows. Mobile first. */
+.route-search {
+  margin: 0 calc(var(--bs-gutter-x, 1.5rem) * -0.5);  /* edge to edge, like the rows */
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+/* One row: the input grows, the two buttons keep their size. */
+.route-search-bar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.route-search-bar input {
+  flex: 1;
+  min-width: 0;  /* lets the input shrink on narrow phones */
+  height: 48px;
+  padding: 0 0.85rem;
+  border: 1.5px solid var(--color-secondary);
+  border-radius: 0.625rem;
+  background-color: #fff;
+  color: var(--color-primary);
+  font-size: 1rem;  /* 16px stops iPhones from zooming in */
+}
+
+.route-search-bar input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 0.25rem rgb(86 163 166 / 0.35);
+}
+
+.route-search-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 48px;
+  padding: 0 0.9rem;
+  border: 2px solid var(--color-primary);
+  border-radius: 0.625rem;
+  background-color: var(--color-primary);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.route-search-btn:hover {
+  background-color: #063a4a;
+}
+
+/* Filter is outlined so Search stays the main action. */
+.route-filter-toggle {
+  background-color: #fff;
+  color: var(--color-primary);
+}
+
+.route-filter-toggle:hover,
+.route-filter-toggle[aria-expanded="true"] {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+/* "3+" chip on the Filter button while a comfort filter is on. */
+.route-filter-badge {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background-color: var(--color-accent);
+  color: var(--color-primary);  /* dark teal on yellow: 5.0:1 */
+  font-size: 0.85rem;
+}
+
+.route-search-btn:focus-visible,
+.comfort-filter-clear:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* The panel that drops down under the bar: a white card. */
+.comfort-filter {
+  margin-top: 0.75rem;
+  padding: 1rem 1rem 1.1rem;
+  border-radius: 1rem;
+  background-color: #fff;
+  box-shadow: 0 4px 16px rgb(8 76 97 / 0.12);
+}
+
+.comfort-filter legend {
+  margin-bottom: 0.15rem;
+  color: var(--color-primary);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.comfort-filter-hint {
+  margin: 0 0 0.75rem;
+  color: var(--color-secondary);  /* slate on white: 5.5:1 */
+  font-size: 0.9rem;
+}
+
+/* Five circles spread along a line. The line is drawn behind them with
+   ::before, running from the first circle's center to the last one's. */
+.comfort-line {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  justify-items: center;
+}
+
+.comfort-line::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 10%;   /* center of column 1 */
+  right: 10%;  /* center of column 5 */
+  height: 3px;
+  background-color: var(--color-primary);
+  transform: translateY(-50%);
+}
+
+/* Same trick as the feedback form: the real radio stays in the page for
+   keyboards and screen readers, and its label is the visible circle. */
+.comfort-line input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.comfort-line label {
+  position: relative;  /* sits above the line */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--color-primary);
+  border-radius: 50%;
+  background-color: #fff;
+  color: var(--color-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.comfort-line label:hover {
+  background-color: var(--color-background);
+}
+
+.comfort-line input:checked + label {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.comfort-line input:focus-visible + label {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.comfort-line-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  color: var(--color-secondary);
+  font-size: 0.85rem;
+}
+
+.comfort-filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.comfort-filter-actions .route-search-btn {
+  justify-content: center;
+  min-width: 8rem;
+}
+
+.comfort-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 0.5rem;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* "Showing 2 routes matching ..." above the rows. */
+.route-search-summary {
+  margin: 0;
+  padding: 0.5rem 0;
+  color: var(--color-primary);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.route-search-summary a {
+  margin-left: 0.25rem;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Shown in place of the rows when nothing matches. */
+.route-rows-empty {
+  padding: 2rem 1rem;
+  color: var(--color-primary);
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+.route-rows-empty a {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--color-primary);
+  font-weight: 700;
+}

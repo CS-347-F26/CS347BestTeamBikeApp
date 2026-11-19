@@ -4,7 +4,7 @@ from math import isfinite
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.db import DatabaseError, connection
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic
@@ -13,7 +13,7 @@ from django.db import transaction
 from django.views.decorators.http import require_GET
 
 from .models import User, Route, RouteWaypoint, Location, RouteFeedback
-from .forms import ProfileForm, RouteFeedbackForm, SignUpForm
+from .forms import ProfileForm, RouteFeedbackForm, RouteSearchForm, SignUpForm
 
 route_logger = logging.getLogger("catalog.routes")
 health_logger = logging.getLogger("catalog.health")
@@ -67,8 +67,32 @@ class RouteListView(generic.ListView):
     model = Route
     template_name = "route_selection.html"
 
+    def get_queryset(self):
+        """Narrow the list with the search form's GET values:
+        q       -> route name or color contains this text (any case)
+        comfort -> route's comfort rating is at least this (1-5).
+        Unrated routes (comfortability 0) drop out once a comfort is picked."""
+        routes = super().get_queryset()
+        self.form = RouteSearchForm(self.request.GET)
+        self.query = ""
+        self.min_comfort = None
+        if self.form.is_valid():
+            self.query = self.form.cleaned_data["q"].strip()
+            self.min_comfort = self.form.cleaned_data["comfort"]
+        if self.query:
+            routes = routes.filter(
+                Q(name__icontains=self.query) | Q(color__icontains=self.query)
+            )
+        if self.min_comfort is not None:
+            routes = routes.filter(comfortability__gte=self.min_comfort)
+        return routes
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["form"] = self.form
+        context["query"] = self.query
+        context["min_comfort"] = self.min_comfort
+        context["is_filtered"] = bool(self.query) or self.min_comfort is not None
         for route in context["object_list"]:
             _log_route_loaded(self.request, route, "list")
         return context
