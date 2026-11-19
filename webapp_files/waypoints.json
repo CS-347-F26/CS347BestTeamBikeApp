@@ -2333,5 +2333,57 @@
       }
     }
   ]
+},
+
+{
+    "type": "PredefinedRoute",
+    "features": [
+    {
+      "type": "Downtown",
+      "properties": {},
+      "color": "Red",
+      "geometry": {
+        "type": "MainRoute",
+        "coordinates": [
+          
+        ]
+      }
+    }
+  ]
+},
+
+{
+    "type": "PredefinedRoute",
+    "features": [
+    {
+      "type": "Central",
+      "properties": {},
+      "color": "Indigo",
+      "geometry": {
+        "type": "MainRoute",
+        "coordinates": [
+          
+        ]
+      }
+    }
+  ]
+},
+
+{
+    "type": "PredefinedRoute",
+    "features": [
+    {
+      "type": "Arboretum",
+      "properties": {},
+      "color": "Blue",
+      "geometry": {
+        "type": "MainRoute",
+        "coordinates": [
+          
+        ]
+      }
+    }
+  ]
 }
+
 ]
