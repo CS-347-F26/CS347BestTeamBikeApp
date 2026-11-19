@@ -110,57 +110,45 @@
   background-color: #063a4a;
 }
 
-/* Filter is outlined so Search stays the main action. */
-.route-filter-toggle {
-  background-color: #fff;
-  color: var(--color-primary);
-}
-
-.route-filter-toggle:hover,
-.route-filter-toggle[aria-expanded="true"] {
-  background-color: var(--color-primary);
-  color: #fff;
-}
-
-/* "3+" chip on the Filter button while a comfort filter is on. */
-.route-filter-badge {
-  padding: 0.05rem 0.4rem;
-  border-radius: 999px;
-  background-color: var(--color-accent);
-  color: var(--color-primary);  /* dark teal on yellow: 5.0:1 */
-  font-size: 0.85rem;
-}
-
 .route-search-btn:focus-visible,
 .comfort-filter-clear:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-/* The panel that drops down under the bar: a white card. */
+/* The comfort section: flat, right on the sage background like the
+   checkboxes row (Kenzie preferred this to a white card). */
 .comfort-filter {
-  margin-top: 0.75rem;
-  padding: 1rem 1rem 1.1rem;
-  border-radius: 1rem;
-  background-color: #fff;
-  box-shadow: 0 4px 16px rgb(8 76 97 / 0.12);
+  position: relative;  /* for the Clear link in the top-right corner */
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .comfort-filter legend {
-  margin-bottom: 0.15rem;
+  float: none;
+  width: auto;
+  margin-bottom: 0;
   color: var(--color-primary);
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
+/* Dark teal, not slate: slate on the sage background is only 4.1:1. */
 .comfort-filter-hint {
-  margin: 0 0 0.75rem;
-  color: var(--color-secondary);  /* slate on white: 5.5:1 */
-  font-size: 0.9rem;
+  margin: 0 0 0.4rem;
+  color: var(--color-primary);
+  font-size: 0.85rem;
 }
 
 /* Five circles spread along a line. The line is drawn behind them with
    ::before, running from the first circle's center to the last one's. */
+.comfort-line,
+.comfort-line-scale {
+  max-width: 35rem;  /* keeps the line short: ~10px of line between circles */
+}
+
 .comfort-line {
   position: relative;
   display: grid;
@@ -222,28 +210,20 @@
 .comfort-line-scale {
   display: flex;
   justify-content: space-between;
-  margin-top: 0.4rem;
-  color: var(--color-secondary);
+  margin-top: 0.25rem;
+  color: var(--color-primary);  /* slate would be too faint on sage */
   font-size: 0.85rem;
 }
 
-.comfort-filter-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.comfort-filter-actions .route-search-btn {
-  justify-content: center;
-  min-width: 8rem;
-}
-
+/* Clear at the right end of the hint line.
+   Still a 44px-tall tap area. */
 .comfort-filter-clear {
+  position: absolute;
+  top: -0.6rem;  /* lines the 44px tap area up with the hint line */
+  right: 0;
   display: inline-flex;
   align-items: center;
-  min-height: 48px;
+  min-height: 44px;
   padding: 0 0.5rem;
   color: var(--color-primary);
   font-weight: 600;
@@ -277,4 +257,80 @@
   margin-top: 0.5rem;
   color: var(--color-primary);
   font-weight: 700;
+}
+
+/* --- Name / Color / Official checkboxes under the search bar -----------
+   Each one reads "Label [ ]": the word, then a real checkbox. The whole
+   label is the tap target (44px tall). Thin dividers sit between them. */
+.route-search-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.route-search-in {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.route-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* The browser's own checkbox, sized up and tinted dark teal. */
+.route-check input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.route-check input:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Thin vertical line between Name | Color | Official. */
+.route-search-divider {
+  width: 2px;
+  height: 24px;
+  border-radius: 1px;
+  background-color: rgb(8 76 97 / 0.25);
+}
+
+/* Checkboxes, then the comfort card. Phones: stacked. Wider screens: the
+   card sits beside the checkboxes. */
+.route-search-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 48rem) {
+  .route-search-filters {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .route-search-filters .comfort-filter {
+    width: 17rem;  /* same as the line, so Clear stays next to the circles */
+  }
 }

@@ -21,19 +21,38 @@
       <input type="search" name="q" id="{{ form.q.id_for_label }}" value="{{ query }}"
              maxlength="100" placeholder="Search" autocomplete="off">
       <button type="submit" class="route-search-btn">Search</button>
-      <button type="button" class="route-search-btn route-filter-toggle"
-              data-bs-toggle="collapse" data-bs-target="#comfort-filter"
-              aria-controls="comfort-filter" aria-expanded="{% if min_comfort %}true{% else %}false{% endif %}">
-        Filter{% if min_comfort %} <span class="route-filter-badge">{{ min_comfort }}+<span class="visually-hidden"> comfort</span></span>{% endif %}
-      </button>
     </div>
 
-    {# Drops down under the bar (Bootstrap Collapse); open while a filter is on. #}
-    <div class="collapse{% if min_comfort %} show{% endif %}" id="comfort-filter">
+    {# The checkboxes and the comfort card. On phones the card sits under the #}
+    {# checkboxes; on wider screens it sits beside them (see routes.css). #}
+    <div class="route-search-filters">
+    {# Always-visible checkboxes under the bar, each as "[ ] Label" with a #}
+    {# divider between them. They stay checked after Search. Name/Color pick #}
+    {# which fields the search text is matched against (none checked = both). #}
+    {# Wrapping the box in its <label> makes the word clickable too. #}
+    <div class="route-search-options">
+      <fieldset class="route-search-in">
+        <legend class="visually-hidden">{{ form.search_in.label }}</legend>
+        {% for box in form.search_in %}
+          {% if not forloop.first %}<span class="route-search-divider" aria-hidden="true"></span>{% endif %}
+          <label class="route-check">{{ box.tag }} {{ box.choice_label }}</label>
+        {% endfor %}
+      </fieldset>
+      <span class="route-search-divider" aria-hidden="true"></span>
+      <label class="route-check">
+        <input type="checkbox" name="official" id="{{ form.official.id_for_label }}"{% if official %} checked{% endif %}>
+        Official<span class="visually-hidden"> routes only</span>
+      </label>
+    </div>
+
+    {# Always shown. The Search button above submits the picked circle too. #}
       <fieldset class="comfort-filter">
         <legend>{{ form.comfort.label }}</legend>
-        <p class="comfort-filter-hint">Show routes at least this comfortable.</p>
+        {# Clear sits in the card's top-right corner to keep the card short. #}
+        <a class="comfort-filter-clear" href="{% url 'route-list' %}">Clear</a>
+        <p class="comfort-filter-hint">Tap a number again to un-pick it.</p>
         {# Real radio buttons drawn as circles on a line. #}
+        {# js/comfort-unpick.js lets a second tap un-pick the circle. #}
         <div class="comfort-line">
           {% for radio in form.comfort %}
             {{ radio.tag }}
@@ -44,18 +63,14 @@
           <span>Less comfy</span>
           <span>More comfy</span>
         </div>
-        <p class="visually-hidden">1 means very uncomfortable and 5 means very comfortable.</p>
-        <div class="comfort-filter-actions">
-          <button type="submit" class="route-search-btn">Apply</button>
-          <a class="comfort-filter-clear" href="{% url 'route-list' %}">Clear</a>
-        </div>
+        <p class="visually-hidden">Shows routes at least this comfortable. 1 means very uncomfortable and 5 means very comfortable.</p>
       </fieldset>
     </div>
   </form>
 
   {% if is_filtered %}
     <p class="route-search-summary">
-      Showing {{ route_list|length }} route{{ route_list|length|pluralize }}{% if query %} matching “{{ query }}”{% endif %}{% if min_comfort %} with comfort {{ min_comfort }}+{% endif %}.
+      Showing {{ route_list|length }} route{{ route_list|length|pluralize }}: {{ filter_summary|join:", " }}.
       <a href="{% url 'route-list' %}">Clear</a>
     </p>
   {% endif %}
@@ -133,4 +148,6 @@
      {% endif %}
     {% endfor %}
   </ul>
+
+  <script src="{% static 'catalog/js/comfort-unpick.js' %}"></script>
 {% endblock %}
