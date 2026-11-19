@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "django",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "--directory", "webapp_files", "python", "manage.py", "runserver", "8002"],
+      "port": 8002
+    }
+  ]
+}

@@ -43,6 +43,23 @@ class StyledAuthenticationForm(AuthenticationForm):
         return super().get_invalid_login_error()
 
 
+class RouteSearchForm(forms.Form):
+    """Search and filter on the routes page (GET /routes/?q=...&comfort=...).
+
+    Both fields are optional. A bad value (e.g. ?comfort=9) makes the form
+    invalid, and the view then just shows every route instead of crashing."""
+
+    q = forms.CharField(label="Search routes", required=False, max_length=100)
+    comfort = forms.TypedChoiceField(
+        label="Minimum comfort",
+        choices=[(n, str(n)) for n in range(1, 6)],
+        coerce=int,
+        required=False,
+        empty_value=None,
+        widget=forms.RadioSelect,
+    )
+
+
 class RouteFeedbackForm(forms.ModelForm):
     """A rider's feedback on one route: a 1-5 comfort rating (5 = most
     comfortable) and optional comments. The view fills in user and route."""
