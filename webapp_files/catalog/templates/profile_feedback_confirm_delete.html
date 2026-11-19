@@ -1,0 +1,26 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}Delete feedback{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+  <section class="auth-card" aria-labelledby="delete-title">
+    <h1 id="delete-title" class="auth-title">Delete this feedback?</h1>
+
+    <p class="auth-warning">
+      Are you sure you want to delete your feedback on
+      <strong>{{ feedback.route.name }}</strong> (comfort {{ feedback.comfort_rating }}/5,
+      {{ feedback.created_at|date:"M j, Y" }})? This can't be undone.
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="auth-submit auth-submit--danger">Yes, delete it</button>
+      <a class="auth-secondary" href="{% url 'profile-feedback-list' %}">Cancel</a>
+    </form>
+  </section>
+{% endblock %}

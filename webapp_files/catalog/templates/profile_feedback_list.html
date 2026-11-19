@@ -1,0 +1,42 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}Your feedback{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="profile">
+    <section class="pf-card" aria-labelledby="pf-feedback-all">
+      <h1 id="pf-feedback-all" class="pf-title">Your feedback</h1>
+      {% if feedback_list %}
+        <ul class="pf-list">
+          {% for item in feedback_list %}
+            <li class="pf-feedback route-color--{{ item.route.color|lower }}">
+              <p class="pf-feedback-head">
+                <span class="pf-feedback-route">{{ item.route.name }}</span>
+                &middot; Comfort {{ item.comfort_rating }}/5
+                &middot; <time datetime="{{ item.created_at|date:'c' }}">{{ item.created_at|date:"M j, Y" }}</time>
+              </p>
+              {% if item.text %}
+                <p class="pf-feedback-text">&ldquo;{{ item.text }}&rdquo;</p>
+              {% endif %}
+              <p class="pf-feedback-actions">
+                <a href="{% url 'profile-feedback-edit' item.pk %}">Edit<span class="visually-hidden"> feedback on {{ item.route.name }}</span></a>
+                <a class="pf-feedback-delete" href="{% url 'profile-feedback-delete' item.pk %}">Delete<span class="visually-hidden"> feedback on {{ item.route.name }}</span></a>
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="pf-empty">You haven't given feedback yet. <a href="{% url 'feedback-route-selection' %}">Give feedback</a></p>
+      {% endif %}
+    </section>
+
+    <section class="pf-card pf-actions" aria-label="Navigation">
+      <a class="pf-btn pf-btn--outline" href="{% url 'profile' %}">Back to profile</a>
+    </section>
+  </div>
+{% endblock %}

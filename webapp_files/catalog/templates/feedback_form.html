@@ -1,7 +1,8 @@
 {% extends "base_generic.html" %}
 {% load static %}
 
-{% block title %}Feedback: {{ route.name }}{% endblock %}
+{# This page is also the edit page: profile_feedback_edit passes `feedback`. #}
+{% block title %}{% if feedback %}Edit feedback{% else %}Feedback{% endif %}: {{ route.name }}{% endblock %}
 
 {# The whole page takes the route's light tint (route-color--<color> in main.css). #}
 {% block body_class %}route-color--{{ route.color|lower }} feedback-form-page{% endblock %}
@@ -12,7 +13,7 @@
 
 {% block content %}
   <header class="ff-header">
-    <p class="ff-kicker">Give feedback</p>
+    <p class="ff-kicker">{% if feedback %}Edit feedback{% else %}Give feedback{% endif %}</p>
     <h1 class="ff-route-name">{{ route.name }}</h1>
   </header>
 
@@ -46,9 +47,15 @@
       {% endfor %}
     </div>
 
-    <button type="submit" class="ff-submit">Submit feedback</button>
+    {% if feedback %}
+      <button type="submit" class="ff-submit">Save changes</button>
+      <a class="ff-cancel" href="{% url 'profile-feedback-list' %}">Cancel</a>
+    {% else %}
+      <button type="submit" class="ff-submit">Submit feedback</button>
+    {% endif %}
   </form>
 
+  {% if not feedback %}
   {# Thank-you popup (Bootstrap modal). It opens on load right after a successful submit. #}
   <div class="modal fade" id="thanks-modal" tabindex="-1" aria-labelledby="thanks-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -76,5 +83,6 @@
         bootstrap.Modal.getOrCreateInstance(document.getElementById("thanks-modal")).show();
       });
     </script>
+  {% endif %}
   {% endif %}
 {% endblock %}

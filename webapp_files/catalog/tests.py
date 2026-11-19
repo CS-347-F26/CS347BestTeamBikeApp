@@ -77,6 +77,9 @@ class UrlRoutingTests(TestCase):
             ("map", ()): "/map/",
             ("trip-new", ()): "/trips/new/",
             ("profile", ()): "/profile/",
+            ("profile-feedback-list", ()): "/profile/feedback/",
+            ("profile-feedback-edit", (7,)): "/profile/feedback/7/edit/",
+            ("profile-feedback-delete", (7,)): "/profile/feedback/7/delete/",
             ("login", ()): "/accounts/login/",
         }
         for (name, args), path in expected.items():
@@ -753,6 +756,71 @@ class RouteListPageTests(TestCase):
         self.assertEqual(html.count("Comfort rating"), 1)
 
 
+class RouteSearchTests(TestCase):
+    """Claim I20: the routes page's search box (?q=) matches route names or
+    colors, and the comfort filter (?comfort=n) keeps routes rated n or more."""
+
+    def setUp(self):
+        _delete_all_routes()
+        for name, color, comfort in (
+            ("Red", "Red", 3),
+            ("Blue", "Blue", 5),
+            ("Purple", "Purple", 1),
+            ("Memorial", "Maroon", 0),  # not rated yet
+        ):
+            Route.objects.create(name=name, color=color, comfortability=comfort)
+
+    def names(self, **params):
+        response = self.client.get(reverse("route-list"), params)
+        self.assertEqual(response.status_code, 200)
+        return [route.name for route in response.context["route_list"]]
+
+    def test_no_search_shows_every_route(self):
+        self.assertEqual(self.names(), ["Blue", "Memorial", "Purple", "Red"])
+
+    def test_search_matches_name_in_any_case(self):
+        self.assertEqual(self.names(q="red"), ["Red"])
+        self.assertEqual(self.names(q="RED"), ["Red"])
+        self.assertEqual(self.names(q="mem"), ["Memorial"])
+
+    def test_search_matches_color(self):
+        self.assertEqual(self.names(q="maroon"), ["Memorial"])
+
+    def test_no_match_shows_message_not_example_rows(self):
+        html = self.client.get(reverse("route-list"), {"q": "zzz"}).content.decode()
+        self.assertIn("No routes match your search.", html)
+        self.assertNotIn('<span class="route-name">', html)
+
+    def test_comfort_filter_is_a_minimum(self):
+        self.assertEqual(self.names(comfort=3), ["Blue", "Red"])
+        self.assertEqual(self.names(comfort=1), ["Blue", "Purple", "Red"])
+
+    def test_search_and_filter_combine(self):
+        self.assertEqual(self.names(q="blue", comfort=3), ["Blue"])
+        self.assertEqual(self.names(q="purple", comfort=3), [])
+
+    def test_bad_comfort_value_is_ignored(self):
+        everything = ["Blue", "Memorial", "Purple", "Red"]
+        self.assertEqual(self.names(comfort=9), everything)
+        self.assertEqual(self.names(comfort="abc"), everything)
+
+    def test_page_has_search_box_and_five_comfort_circles(self):
+        html = self.client.get(reverse("route-list")).content.decode()
+        self.assertIn('role="search"', html)
+        self.assertIn('type="search" name="q"', html)
+        self.assertIn('aria-controls="comfort-filter"', html)
+        self.assertEqual(html.count('name="comfort"'), 5)
+
+    def test_choices_are_kept_after_submit(self):
+        html = self.client.get(
+            reverse("route-list"), {"q": "blue", "comfort": 4}
+        ).content.decode()
+        self.assertIn('value="blue"', html)
+        self.assertRegex(html, r'value="4"[^>]*checked')
+        self.assertIn('class="collapse show"', html)  # panel stays open
+        self.assertIn("4+", html)  # badge on the Filter button
+
+
 class FeedbackRouteSelectionPageTests(TestCase):
     """The feedback page lists routes as rows that each link to that
     route's feedback form, or example rows while there are no routes."""
@@ -883,6 +951,103 @@ class ProfilePageTests(TestCase):
         self.assertIn("Comfort 4/5", html)
         self.assertIn("Smooth ride", html)
         self.assertNotIn("No saved routes yet.", html)
+        self.assertIn(f'href="{reverse("profile-feedback-list")}"', html)
+        self.assertIn("See all feedback (1)", html)
+
+
+class ProfileFeedbackTests(TestCase):
+    """A rider can list, edit and delete their own route feedback from the
+    profile, but never someone else's."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="rider", password="test-pass-123")
+        cls.other = User.objects.create_user(username="other", password="test-pass-123")
+        start = Location.objects.create(name="A", latitude=38.449, longitude=-78.869)
+        end = Location.objects.create(name="B", latitude=38.45, longitude=-78.87)
+        cls.route = Route.objects.create(
+            name="Red", color="Red", start_location=start, end_location=end
+        )
+
+    def setUp(self):
+        self.mine = RouteFeedback.objects.create(
+            user=self.user, route=self.route, comfort_rating=2, text="Busy road"
+        )
+        self.theirs = RouteFeedback.objects.create(
+            user=self.other, route=self.route, comfort_rating=5, text="Not yours"
+        )
+        self.client.login(username="rider", password="test-pass-123")
+
+    def test_pages_require_login(self):
+        self.client.logout()
+        for url in (
+            reverse("profile-feedback-list"),
+            reverse("profile-feedback-edit", args=[self.mine.pk]),
+            reverse("profile-feedback-delete", args=[self.mine.pk]),
+        ):
+            with self.subTest(url=url):
+                self.assertRedirects(
+                    self.client.get(url),
+                    f"{reverse('login')}?next={url}",
+                    fetch_redirect_response=False,
+                )
+
+    def test_list_shows_only_my_feedback(self):
+        response = self.client.get(reverse("profile-feedback-list"))
+        self.assertContains(response, "Busy road")
+        self.assertContains(response, "Comfort 2/5")
+        self.assertContains(
+            response, reverse("profile-feedback-edit", args=[self.mine.pk])
+        )
+        self.assertNotContains(response, "Not yours")
+
+    def test_list_empty_state(self):
+        self.mine.delete()
+        response = self.client.get(reverse("profile-feedback-list"))
+        self.assertContains(response, "You haven't given feedback yet.")
+
+    def test_edit_form_is_prefilled(self):
+        url = reverse("profile-feedback-edit", args=[self.mine.pk])
+        html = self.client.get(url).content.decode()
+        self.assertIn("Edit feedback", html)
+        self.assertIn("Save changes", html)
+        self.assertRegex(html, r'value="2"[^>]*checked')
+        self.assertIn("Busy road</textarea>", html)
+        self.assertNotIn("thanks-modal", html)
+
+    def test_edit_saves_changes(self):
+        url = reverse("profile-feedback-edit", args=[self.mine.pk])
+        response = self.client.post(url, {"comfort_rating": "4", "text": "Better now"})
+        self.assertRedirects(response, reverse("profile-feedback-list"))
+        self.mine.refresh_from_db()
+        self.assertEqual((self.mine.comfort_rating, self.mine.text), (4, "Better now"))
+        self.assertEqual((self.mine.user, self.mine.route), (self.user, self.route))
+
+    def test_edit_rejects_bad_rating(self):
+        url = reverse("profile-feedback-edit", args=[self.mine.pk])
+        response = self.client.post(url, {"comfort_rating": "9", "text": "x"})
+        self.assertEqual(response.status_code, 200)
+        self.mine.refresh_from_db()
+        self.assertEqual(self.mine.comfort_rating, 2)
+
+    def test_delete_confirms_then_deletes(self):
+        url = reverse("profile-feedback-delete", args=[self.mine.pk])
+        self.assertContains(self.client.get(url), "Delete this feedback?")
+        self.assertTrue(RouteFeedback.objects.filter(pk=self.mine.pk).exists())
+        response = self.client.post(url)
+        self.assertRedirects(response, reverse("profile-feedback-list"))
+        self.assertFalse(RouteFeedback.objects.filter(pk=self.mine.pk).exists())
+        self.assertTrue(RouteFeedback.objects.filter(pk=self.theirs.pk).exists())
+
+    def test_other_users_and_missing_feedback_404(self):
+        for name in ("profile-feedback-edit", "profile-feedback-delete"):
+            for pk in (self.theirs.pk, 9999):
+                with self.subTest(name=name, pk=pk):
+                    url = reverse(name, args=[pk])
+                    self.assertEqual(self.client.get(url).status_code, 404)
+                    self.assertEqual(self.client.post(url).status_code, 404)
+        self.theirs.refresh_from_db()
+        self.assertEqual(self.theirs.comfort_rating, 5)
 
 
 class PasswordChangePageTests(TestCase):
