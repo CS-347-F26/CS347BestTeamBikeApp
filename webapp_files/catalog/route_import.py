@@ -223,7 +223,9 @@ def _read_points(geometry, where):
     points = []
     for number, point in enumerate(coordinates, start=1):
         if not isinstance(point, list) or len(point) < 2:
-            raise RouteImportError(f"{where}, point {number} isn't [longitude, latitude].")
+            raise RouteImportError(
+                f"{where}, point {number} isn't [longitude, latitude]."
+            )
         longitude, latitude = point[0], point[1]
         if not all(
             isinstance(value, (int, float)) and not isinstance(value, bool)
@@ -293,3 +295,44 @@ def _first_text(*values):
         if isinstance(value, str) and value.strip():
             return value.strip()
     return ""
+
+
+# --- export -----------------------------------------------------------------
+
+
+def route_to_geojson(route):
+    """One route as a standard GeoJSON FeatureCollection (opens in
+    geojson.io, and parse_route_file can import it again).
+
+    The first feature is the route's line, with its name and color in
+    `properties`. Each named waypoint is added as a Point feature so its
+    name shows up in geojson.io; importing skips points, so they don't
+    change the route."""
+    route_waypoints = route.route_waypoints.select_related("waypoint")
+    waypoints = [route_waypoint.waypoint for route_waypoint in route_waypoints]
+    features = [
+        {
+            "type": "Feature",
+            "properties": {
+                "name": route.name,
+                "color": route.color.lower(),
+                "route_type": route.route_type,
+                "parent_route": route.parent_route.name if route.parent_route_id else None,
+                "is_official": route.is_official,
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[w.longitude, w.latitude] for w in waypoints],
+            },
+        }
+    ]
+    features += [
+        {
+            "type": "Feature",
+            "properties": {"name": w.name},
+            "geometry": {"type": "Point", "coordinates": [w.longitude, w.latitude]},
+        }
+        for w in waypoints
+        if w.name.strip()
+    ]
+    return {"type": "FeatureCollection", "features": features}

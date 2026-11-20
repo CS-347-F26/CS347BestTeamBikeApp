@@ -23,7 +23,9 @@ from .forms import (
     RouteSearchForm,
     SignUpForm,
 )
-from .route_import import save_routes
+from django.utils.text import slugify
+
+from .route_import import route_to_geojson, save_routes
 
 route_logger = logging.getLogger("catalog.routes")
 health_logger = logging.getLogger("catalog.health")
@@ -150,6 +152,23 @@ class RouteDetailView(generic.DetailView):
         context = super().get_context_data(**kwargs)
         _log_route_loaded(self.request, self.object, "detail")
         return context
+
+
+@require_GET
+def route_export(request, pk):
+    """Download one route as a GeoJSON file: /routes/<pk>/export/
+
+    The file opens in geojson.io and can be uploaded again on the import
+    page. Public, like the route page itself."""
+    route = get_object_or_404(Route.objects.select_related("parent_route"), pk=pk)
+    _log_route_loaded(request, route, "export")
+    response = JsonResponse(
+        route_to_geojson(route), content_type="application/geo+json"
+    )
+    filename = f"{slugify(route.name) or 'route'}.geojson"
+    # "attachment" makes the browser save the file instead of showing it.
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required

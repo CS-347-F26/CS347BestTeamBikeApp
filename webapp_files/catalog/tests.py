@@ -70,6 +70,7 @@ class UrlRoutingTests(TestCase):
             ("route-list", ()): "/routes/",
             ("route-import", ()): "/routes/import/",
             ("route-detail", (r,)): f"/routes/{r}/",
+            ("route-export", (r,)): f"/routes/{r}/export/",
             ("feedback-route-selection", ()): "/feedback/",
             ("feedback-form", (r,)): f"/routes/{r}/feedback/",
             (
@@ -129,6 +130,7 @@ class UrlRoutingTests(TestCase):
         self.client.login(username="checker", password="test-pass-123")
         names = [
             "route-detail",
+            "route-export",
             "feedback-form",
             "feedback-confirmation",
             "post-ride-feedback-prompt",
@@ -1493,6 +1495,40 @@ class RouteImportTests(TestCase):
         self.upload(data)
         self.assertTrue(self.new_routes().filter(name="Downtown RVA").exists())
         self.assertContains(self.client.get(reverse("route-import")), "within Richmond")
+
+    def test_export_downloads_geojson(self):
+        self.upload(self.TEAM_FORMAT)
+        main = self.new_routes().get(name="Test Main")
+        self.client.logout()  # export is public, like the route page
+        response = self.client.get(reverse("route-export", args=[main.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/geo+json")
+        self.assertIn('filename="test-main.geojson"', response["Content-Disposition"])
+        data = json.loads(response.content)
+        line, point = data["features"]
+        self.assertEqual(data["type"], "FeatureCollection")
+        self.assertEqual(line["properties"]["name"], "Test Main")
+        self.assertEqual(line["properties"]["color"], "green")
+        self.assertEqual(
+            line["geometry"],
+            {"type": "LineString", "coordinates": [[-78.80, 38.40], [-78.81, 38.41]]},
+        )
+        # The named waypoint comes along as a point.
+        self.assertEqual(point["properties"]["name"], "Start Point")
+        self.assertContains(
+            self.client.get(main.get_absolute_url()),
+            reverse("route-export", args=[main.pk]),
+        )
+
+    def test_exported_file_imports_again(self):
+        self.upload(self.GEOJSON_IO)
+        route = self.new_routes().get()
+        exported = self.client.get(reverse("route-export", args=[route.pk])).content
+        self.before.add(route.pk)
+        self.upload(exported)
+        copy = self.new_routes().get()
+        self.assertEqual((copy.name, copy.color), ("Campus Loop", "blue"))
+        self.assertEqual(copy.route_waypoints.count(), 3)
 
     def test_bad_file_shows_error_and_saves_nothing(self):
         empty = json.dumps({"type": "FeatureCollection", "features": []}).encode()

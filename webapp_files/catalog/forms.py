@@ -30,8 +30,7 @@ class ProfileForm(forms.ModelForm):
             ),
         }
         labels = {
-            "location_sharing_enabled":
-                "Show my location on the map",
+            "location_sharing_enabled": "Show my location on the map",
         }
 
 

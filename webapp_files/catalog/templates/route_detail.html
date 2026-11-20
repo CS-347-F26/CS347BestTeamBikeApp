@@ -29,5 +29,6 @@
     {% endfor %}
   </ol>
 
-  <a href="{% url 'feedback-form' route.pk %}">Give feedback on this route</a>
+  <p><a href="{% url 'feedback-form' route.pk %}">Give feedback on this route</a></p>
+  <p><a href="{% url 'route-export' route.pk %}" download>Download as GeoJSON</a></p>
 {% endblock %}

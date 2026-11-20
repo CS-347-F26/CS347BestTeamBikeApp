@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('catalog', '0007_sync_all_official_routes'),
+        ("catalog", "0007_sync_all_official_routes"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='location_permission_asked',
+            model_name="user",
+            name="location_permission_asked",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='user',
-            name='location_sharing_enabled',
+            model_name="user",
+            name="location_sharing_enabled",
             field=models.BooleanField(default=False),
         ),
     ]

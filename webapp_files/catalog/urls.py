@@ -30,6 +30,8 @@ urlpatterns += [
     # Upload a GeoJSON file to add user-made routes (login required)
     path("routes/import/", views.route_import, name="route-import"),
     path("routes/<int:pk>/", views.RouteDetailView.as_view(), name="route-detail"),
+    # Download one route as a GeoJSON file
+    path("routes/<int:pk>/export/", views.route_export, name="route-export"),
 ]
 
 # Feedback on a route, nested under that route.
