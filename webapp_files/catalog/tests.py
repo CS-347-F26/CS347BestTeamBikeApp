@@ -1625,7 +1625,10 @@ class RouteImportTests(TestCase):
         # No name/color in the file or form: the current ones are kept.
         self.assertEqual((route.name, route.color), ("Campus Loop", "blue"))
         self.assertEqual(
-            [(rw.waypoint.longitude, rw.waypoint.latitude) for rw in route.route_waypoints.all()],
+            [
+                (rw.waypoint.longitude, rw.waypoint.latitude)
+                for rw in route.route_waypoints.all()
+            ],
             [(-78.860, 38.440), (-78.861, 38.441)],
         )
         self.assertEqual(route.feedback.count(), 1)
@@ -1636,13 +1639,28 @@ class RouteImportTests(TestCase):
         two_lines = {
             "type": "FeatureCollection",
             "features": [
-                {"type": "Feature", "properties": {},
-                 "geometry": {"type": "LineString", "coordinates": [[-78.86, 38.44], [-78.87, 38.45]]}},
-                {"type": "Feature", "properties": {},
-                 "geometry": {"type": "LineString", "coordinates": [[-78.86, 38.44], [-78.88, 38.46]]}},
+                {
+                    "type": "Feature",
+                    "properties": {},
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[-78.86, 38.44], [-78.87, 38.45]],
+                    },
+                },
+                {
+                    "type": "Feature",
+                    "properties": {},
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[-78.86, 38.44], [-78.88, 38.46]],
+                    },
+                },
             ],
         }
-        far_away = {"type": "LineString", "coordinates": [[-78.86, 38.44], [-77.43, 37.54]]}
+        far_away = {
+            "type": "LineString",
+            "coordinates": [[-78.86, 38.44], [-77.43, 37.54]],
+        }
         for label, data, message in (
             ("two lines", two_lines, "upload a file with one line"),
             ("outside area", far_away, "goes outside"),
@@ -1650,7 +1668,11 @@ class RouteImportTests(TestCase):
             with self.subTest(label):
                 response = self.client.post(
                     reverse("route-edit", args=[route.pk]),
-                    {"file": SimpleUploadedFile("x.geojson", json.dumps(data).encode())},
+                    {
+                        "file": SimpleUploadedFile(
+                            "x.geojson", json.dumps(data).encode()
+                        )
+                    },
                 )
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, message)

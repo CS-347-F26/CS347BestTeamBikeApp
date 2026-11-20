@@ -159,7 +159,9 @@ class RouteImportForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.route = route
         if route is not None:
-            self.fields["name"].help_text = "Leave blank to keep the file's or current name."
+            self.fields["name"].help_text = (
+                "Leave blank to keep the file's or current name."
+            )
             self.fields["color"].choices = [("", "Use the file's or current color")] + [
                 (color, color.title()) for color in SUPPORTED_COLORS
             ]
