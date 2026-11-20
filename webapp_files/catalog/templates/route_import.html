@@ -1,7 +1,7 @@
 {% extends "base_generic.html" %}
 {% load static %}
 
-{% block title %}Import a route{% endblock %}
+{% block title %}{% if route %}Update {{ route.name }}{% else %}Import a route{% endif %}{% endblock %}
 
 {% block page_css %}
   <link rel="stylesheet" href="{% static 'catalog/css/pages/auth.css' %}">
@@ -9,8 +9,10 @@
 
 {% block content %}
   <section class="auth-card" aria-labelledby="import-title">
-    <h1 id="import-title" class="auth-title">Import a route</h1>
+    {# The same page updates an existing route when the view passes `route`. #}
+    <h1 id="import-title" class="auth-title">{% if route %}Update {{ route.name }}{% else %}Import a route{% endif %}</h1>
     <p class="auth-subtitle">
+      {% if route %}Upload a new file to replace this route's line. Its feedback stays.{% endif %}
       Draw your route as a line on
       <a href="https://geojson.io" target="_blank" rel="noopener">geojson.io</a>,
       then choose Save → GeoJSON and upload the file here.
@@ -40,8 +42,8 @@
         </div>
       {% endfor %}
 
-      <button type="submit" class="auth-submit">Import route</button>
-      <a class="auth-secondary" href="{% url 'route-list' %}">Cancel</a>
+      <button type="submit" class="auth-submit">{% if route %}Save changes{% else %}Import route{% endif %}</button>
+      <a class="auth-secondary" href="{% if route %}{{ route.get_absolute_url }}{% else %}{% url 'route-list' %}{% endif %}">Cancel</a>
     </form>
   </section>
 {% endblock %}

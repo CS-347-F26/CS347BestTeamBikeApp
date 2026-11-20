@@ -146,7 +146,9 @@ def save_routes(parsed_routes, user):
 
     A subroute is attached to the main route of the same color from the same
     file (the rule migration 0006 uses). If the file has no such main route,
-    the subroute is saved as a main route instead. Returns the new routes."""
+    the subroute is saved as a main route instead. The new routes are added
+    to the rider's saved routes. Returns the new routes."""
+    shared_waypoints = {}
     main_by_color = {}
     created = {}  # index in the file -> new Route
     # Save main routes first so subroutes can find their parent.
@@ -171,11 +173,44 @@ def save_routes(parsed_routes, user):
         )
         if route_type == Route.Type.MAIN:
             main_by_color.setdefault(parsed.color, route)
-        _add_waypoints(route, parsed.points)
+        _add_waypoints(route, parsed.points, shared_waypoints)
         created[index] = route
 
     # Return them in the order they had in the file.
-    return [created[index] for index in range(len(parsed_routes))]
+    routes = [created[index] for index in range(len(parsed_routes))]
+    user.saved_routes.add(*routes)
+    return routes
+
+
+@transaction.atomic
+def replace_route(route, parsed):
+    """Give an existing route the name, color and line from a new upload
+    (one ParsedRoute). The route keeps its id, type, parent, feedback and
+    comments; its old waypoints are removed if no other route uses them."""
+    old_waypoint_ids = list(route.route_waypoints.values_list("waypoint_id", flat=True))
+    route.name = parsed.name
+    route.color = parsed.color
+    route.save(update_fields=["name", "color"])
+    route.route_waypoints.all().delete()
+    _add_waypoints(route, parsed.points, {})
+    _delete_unused_waypoints(old_waypoint_ids)
+    return route
+
+
+@transaction.atomic
+def delete_route(route):
+    """Delete a route and its subroutes (a parent can't be deleted while it
+    has subroutes), then any of their waypoints no other route uses.
+    Feedback and comments on them are deleted with them (CASCADE)."""
+    routes = [*route.subroutes.all(), route]
+    waypoint_ids = list(
+        RouteWaypoint.objects.filter(route__in=routes).values_list(
+            "waypoint_id", flat=True
+        )
+    )
+    for doomed in routes:  # subroutes first
+        doomed.delete()
+    _delete_unused_waypoints(waypoint_ids)
 
 
 # --- helpers ----------------------------------------------------------------
@@ -272,21 +307,30 @@ def _check_in_area(points, bounds, area_name, where):
         )
 
 
-def _add_waypoints(route, points):
-    """Create the route's RouteWaypoints, reusing a waypoint that already
-    sits at exactly the same spot (as migration 0006 does)."""
+def _add_waypoints(route, points, shared):
+    """Create the route's waypoints and RouteWaypoints.
+
+    `shared` maps (longitude, latitude) -> Waypoint for this one upload, so a
+    subroute shares its junction point with its main route. Waypoints that
+    already exist (e.g. on official routes) are never reused or renamed:
+    an imported route is private, and editing a shared waypoint would leak
+    the rider's names onto routes everyone sees."""
     for order, (longitude, latitude, name) in enumerate(points):
-        waypoint = Waypoint.objects.filter(
-            longitude=longitude, latitude=latitude
-        ).first()
+        waypoint = shared.get((longitude, latitude))
         if waypoint is None:
             waypoint = Waypoint.objects.create(
                 name=name, longitude=longitude, latitude=latitude
             )
+            shared[(longitude, latitude)] = waypoint
         elif name and not waypoint.name:
             waypoint.name = name
             waypoint.save(update_fields=["name"])
         RouteWaypoint.objects.create(route=route, waypoint=waypoint, order=order)
+
+
+def _delete_unused_waypoints(waypoint_ids):
+    """Delete the given waypoints that are no longer on any route."""
+    Waypoint.objects.filter(pk__in=waypoint_ids, route_waypoints__isnull=True).delete()
 
 
 def _first_text(*values):
@@ -317,7 +361,9 @@ def route_to_geojson(route):
                 "name": route.name,
                 "color": route.color.lower(),
                 "route_type": route.route_type,
-                "parent_route": route.parent_route.name if route.parent_route_id else None,
+                "parent_route": (
+                    route.parent_route.name if route.parent_route_id else None
+                ),
                 "is_official": route.is_official,
             },
             "geometry": {

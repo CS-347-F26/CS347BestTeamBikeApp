@@ -71,6 +71,8 @@ class UrlRoutingTests(TestCase):
             ("route-import", ()): "/routes/import/",
             ("route-detail", (r,)): f"/routes/{r}/",
             ("route-export", (r,)): f"/routes/{r}/export/",
+            ("route-edit", (r,)): f"/routes/{r}/edit/",
+            ("route-delete", (r,)): f"/routes/{r}/delete/",
             ("feedback-route-selection", ()): "/feedback/",
             ("feedback-form", (r,)): f"/routes/{r}/feedback/",
             (
@@ -170,10 +172,14 @@ class MapViewTests(TestCase):
         end = Location.objects.create(
             name="JMU Quad", latitude=38.438, longitude=-78.871
         )
+        # User-made routes only show on the map for the rider who made them.
+        maker = User.objects.create_user(username="maker", password="test-pass-123")
+        self.client.login(username="maker", password="test-pass-123")
         route = Route.objects.create(
             name="Red Line",
             color="red",
             is_official=False,
+            created_by=maker,
             start_location=start,
             end_location=end,
         )
@@ -863,9 +869,15 @@ class RouteSearchCheckboxTests(TestCase):
         _delete_all_routes()
         Route.objects.create(name="Yellow", color="Yellow")
         Route.objects.create(name="Friendly City Trail", color="yellow")
+        # A user-made route is only listed for the rider who made it.
+        maker = User.objects.create_user(username="maker", password="test-pass-123")
         Route.objects.create(
-            name="Community Yellow Loop", color="Red", is_official=False
+            name="Community Yellow Loop",
+            color="Red",
+            is_official=False,
+            created_by=maker,
         )
+        self.client.login(username="maker", password="test-pass-123")
 
     def names(self, **params):
         response = self.client.get(reverse("route-list"), params)
@@ -1499,7 +1511,6 @@ class RouteImportTests(TestCase):
     def test_export_downloads_geojson(self):
         self.upload(self.TEAM_FORMAT)
         main = self.new_routes().get(name="Test Main")
-        self.client.logout()  # export is public, like the route page
         response = self.client.get(reverse("route-export", args=[main.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/geo+json")
@@ -1519,6 +1530,159 @@ class RouteImportTests(TestCase):
             self.client.get(main.get_absolute_url()),
             reverse("route-export", args=[main.pk]),
         )
+
+    # --- privacy, saved routes, edit, delete -------------------------------
+
+    def import_campus_loop(self):
+        self.upload(self.GEOJSON_IO)
+        return self.new_routes().get()
+
+    def test_imported_route_is_saved_for_uploader(self):
+        route = self.import_campus_loop()
+        self.assertIn(route, self.user.saved_routes.all())
+
+    def test_imported_route_is_private_to_uploader(self):
+        route = self.import_campus_loop()
+        for page in ("route-list", "feedback-route-selection"):
+            with self.subTest(owner=page):
+                response = self.client.get(reverse(page))
+                self.assertIn(route, response.context["route_list"])
+        map_names = [
+            r["name"]
+            for r in self.client.get(reverse("map")).context["map_data"]["routes"]
+        ]
+        self.assertIn("Campus Loop", map_names)
+
+        User.objects.create_user(username="other", password="test-pass-123")
+        for who in ("other rider", "logged out"):
+            self.client.logout()
+            if who == "other rider":
+                self.client.login(username="other", password="test-pass-123")
+            with self.subTest(who=who):
+                # Check by id: an official route is called "Central JMU Campus
+                # Loop Subroute", so the name alone isn't unique.
+                listed = self.client.get(reverse("route-list")).context["route_list"]
+                self.assertNotIn(route, listed)
+                picks = self.client.get(reverse("feedback-route-selection"))
+                self.assertNotIn(route, picks.context["route_list"])
+                map_data = self.client.get(reverse("map")).context["map_data"]
+                self.assertNotIn("Campus Loop", [r["name"] for r in map_data["routes"]])
+                for name in (
+                    "route-detail",
+                    "route-export",
+                    "post-ride-feedback-prompt",
+                    "feedback-confirmation",
+                ):
+                    response = self.client.get(reverse(name, args=[route.pk]))
+                    self.assertEqual(response.status_code, 404, name)
+            if who == "other rider":
+                for name in ("feedback-form", "route-edit", "route-delete"):
+                    with self.subTest(who=who, page=name):
+                        response = self.client.get(reverse(name, args=[route.pk]))
+                        self.assertEqual(response.status_code, 404)
+                response = self.client.post(reverse("route-delete", args=[route.pk]))
+                self.assertEqual(response.status_code, 404)
+                self.assertTrue(Route.objects.filter(pk=route.pk).exists())
+
+    def test_import_does_not_touch_official_waypoints(self):
+        official = Route.objects.create(name="Official", color="red")
+        shared = Waypoint.objects.create(longitude=-78.869, latitude=38.449)
+        RouteWaypoint.objects.create(route=official, waypoint=shared, order=0)
+        data = {
+            "type": "LineString",
+            "coordinates": [[-78.869, 38.449, "My Secret Spot"], [-78.870, 38.450]],
+        }
+        self.upload(data, color="red")
+        shared.refresh_from_db()
+        self.assertEqual(shared.name, "")
+        route = self.new_routes().exclude(pk=official.pk).get()
+        self.assertNotEqual(route.route_waypoints.first().waypoint, shared)
+
+    def test_owner_sees_edit_and_delete_links(self):
+        route = self.import_campus_loop()
+        detail = self.client.get(route.get_absolute_url())
+        self.assertContains(detail, reverse("route-edit", args=[route.pk]))
+        self.assertContains(detail, reverse("route-delete", args=[route.pk]))
+
+    def test_owner_replaces_route_with_new_file(self):
+        route = self.import_campus_loop()
+        RouteFeedback.objects.create(user=self.user, route=route, comfort_rating=4)
+        old_ids = list(route.route_waypoints.values_list("waypoint_id", flat=True))
+        new_file = {
+            "type": "LineString",
+            "coordinates": [[-78.860, 38.440], [-78.861, 38.441]],
+        }
+        response = self.client.post(
+            reverse("route-edit", args=[route.pk]),
+            {
+                "file": SimpleUploadedFile(
+                    "new.geojson", json.dumps(new_file).encode(), "application/geo+json"
+                )
+            },
+        )
+        self.assertRedirects(response, route.get_absolute_url())
+        route.refresh_from_db()
+        # No name/color in the file or form: the current ones are kept.
+        self.assertEqual((route.name, route.color), ("Campus Loop", "blue"))
+        self.assertEqual(
+            [(rw.waypoint.longitude, rw.waypoint.latitude) for rw in route.route_waypoints.all()],
+            [(-78.860, 38.440), (-78.861, 38.441)],
+        )
+        self.assertEqual(route.feedback.count(), 1)
+        self.assertFalse(Waypoint.objects.filter(pk__in=old_ids).exists())
+
+    def test_edit_rejects_bad_files_and_keeps_route(self):
+        route = self.import_campus_loop()
+        two_lines = {
+            "type": "FeatureCollection",
+            "features": [
+                {"type": "Feature", "properties": {},
+                 "geometry": {"type": "LineString", "coordinates": [[-78.86, 38.44], [-78.87, 38.45]]}},
+                {"type": "Feature", "properties": {},
+                 "geometry": {"type": "LineString", "coordinates": [[-78.86, 38.44], [-78.88, 38.46]]}},
+            ],
+        }
+        far_away = {"type": "LineString", "coordinates": [[-78.86, 38.44], [-77.43, 37.54]]}
+        for label, data, message in (
+            ("two lines", two_lines, "upload a file with one line"),
+            ("outside area", far_away, "goes outside"),
+        ):
+            with self.subTest(label):
+                response = self.client.post(
+                    reverse("route-edit", args=[route.pk]),
+                    {"file": SimpleUploadedFile("x.geojson", json.dumps(data).encode())},
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, message)
+                self.assertEqual(route.route_waypoints.count(), 3)
+
+    def test_owner_deletes_route_and_subroutes(self):
+        self.upload(self.TEAM_FORMAT)
+        main = self.new_routes().get(name="Test Main")
+        sub = self.new_routes().get(name="Test Main Spur Subroute")
+        waypoint_ids = list(
+            RouteWaypoint.objects.filter(route__in=[main, sub]).values_list(
+                "waypoint_id", flat=True
+            )
+        )
+        confirm = self.client.get(reverse("route-delete", args=[main.pk]))
+        self.assertContains(confirm, "Test Main Spur Subroute")
+        response = self.client.post(reverse("route-delete", args=[main.pk]))
+        self.assertRedirects(response, reverse("route-list"))
+        self.assertFalse(self.new_routes().exists())
+        self.assertFalse(Waypoint.objects.filter(pk__in=waypoint_ids).exists())
+
+    def test_official_routes_cannot_be_edited_or_deleted(self):
+        official = Route.objects.create(name="Official", color="red")
+        for name in ("route-edit", "route-delete"):
+            with self.subTest(name):
+                response = self.client.get(reverse(name, args=[official.pk]))
+                self.assertEqual(response.status_code, 404)
+
+    def test_deleting_account_deletes_their_routes(self):
+        route = self.import_campus_loop()
+        self.user.delete()
+        self.assertFalse(Route.objects.filter(pk=route.pk).exists())
 
     def test_exported_file_imports_again(self):
         self.upload(self.GEOJSON_IO)

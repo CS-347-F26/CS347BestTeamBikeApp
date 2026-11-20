@@ -53,6 +53,16 @@ class Location(models.Model):
         return self.name
 
 
+class RouteQuerySet(models.QuerySet):
+    def visible_to(self, user):
+        """Routes `user` may see: every official route, plus their own
+        user-made (imported) routes. Other riders' imports stay private.
+        Logged-out visitors see official routes only."""
+        if user is not None and user.is_authenticated:
+            return self.filter(Q(is_official=True) | Q(created_by=user))
+        return self.filter(is_official=True)
+
+
 class Route(models.Model):
     """A color-coded bike line, like a transit line (e.g. 'Red Line').
     Ordered geometry is stored in `route.route_waypoints`; comments are
@@ -67,9 +77,11 @@ class Route(models.Model):
     color = models.CharField(max_length=30)
     is_official = models.BooleanField(default=True)
     # The rider who imported a user-made route; blank for official routes.
+    # User-made routes are private to this rider (see RouteQuerySet), so
+    # they are deleted along with the rider's account.
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         related_name="created_routes",
         blank=True,
         null=True,
@@ -105,6 +117,9 @@ class Route(models.Model):
     up_votes = models.PositiveIntegerField(default=0)
     down_votes = models.PositiveIntegerField(default=0)
     comfortability = models.PositiveSmallIntegerField(default=0)
+
+    # Route.objects.visible_to(user) -> the routes this user may see
+    objects = RouteQuerySet.as_manager()
 
     # Metadata
     class Meta:

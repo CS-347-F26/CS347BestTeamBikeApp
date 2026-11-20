@@ -151,20 +151,47 @@ class RouteImportForm(forms.Form):
                 "Save → GeoJSON."
             )
 
+    def __init__(self, *args, route=None, **kwargs):
+        """Pass `route` to update that route instead of adding new ones:
+        the file must then hold exactly one line, and the route's current
+        name and color are kept when neither the file nor the form gives
+        one."""
+        super().__init__(*args, **kwargs)
+        self.route = route
+        if route is not None:
+            self.fields["name"].help_text = "Leave blank to keep the file's or current name."
+            self.fields["color"].choices = [("", "Use the file's or current color")] + [
+                (color, color.title()) for color in SUPPORTED_COLORS
+            ]
+
     def clean(self):
         """Parse the routes once all fields are in, since the name and color
         fields fill in what the file leaves out."""
         cleaned = super().clean()
         if "file" in cleaned:  # only when clean_file succeeded
+            default_name = cleaned.get("name", "")
+            default_color = cleaned.get("color", "")
+            if self.route is not None:
+                default_name = default_name or self.route.name
+                default_color = default_color or self.route.color.lower()
             try:
-                cleaned["parsed"] = parse_route_file(
+                result = parse_route_file(
                     cleaned["file"],
-                    default_name=cleaned.get("name", ""),
-                    default_color=cleaned.get("color", ""),
+                    default_name=default_name,
+                    default_color=default_color,
                     # Only routes inside this city's area (see settings.py).
                     bounds=settings.ROUTE_AREA_BOUNDS,
                     area_name=settings.ROUTE_AREA_NAME,
                 )
             except RouteImportError as error:
                 self.add_error("file", str(error))
+                return cleaned
+            if self.route is not None and len(result.routes) != 1:
+                self.add_error(
+                    "file",
+                    f"To update a route, upload a file with one line "
+                    f"(this one has {len(result.routes)}).",
+                )
+                return cleaned
+            cleaned["parsed"] = result
         return cleaned

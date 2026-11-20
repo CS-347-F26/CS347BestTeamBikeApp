@@ -32,6 +32,9 @@ urlpatterns += [
     path("routes/<int:pk>/", views.RouteDetailView.as_view(), name="route-detail"),
     # Download one route as a GeoJSON file
     path("routes/<int:pk>/export/", views.route_export, name="route-export"),
+    # The uploader's own imported routes: replace with a new file, or delete
+    path("routes/<int:pk>/edit/", views.route_edit, name="route-edit"),
+    path("routes/<int:pk>/delete/", views.route_delete, name="route-delete"),
 ]
 
 # Feedback on a route, nested under that route.

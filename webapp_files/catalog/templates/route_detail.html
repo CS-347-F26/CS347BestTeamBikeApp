@@ -13,6 +13,13 @@
     {% endif %}
   </p>
   <p><strong>Route status:</strong> {% if route.is_official %}Official{% else %}User-made{% if route.created_by %} · Added by {{ route.created_by.username }}{% endif %}{% endif %}</p>
+  {% if route.created_by_id and route.created_by_id == user.pk %}
+    {# Only the rider who imported this route can change or delete it. #}
+    <p>
+      <a href="{% url 'route-edit' route.pk %}">Update with a new file</a>
+      · <a href="{% url 'route-delete' route.pk %}">Delete route</a>
+    </p>
+  {% endif %}
   <h2>Waypoints</h2>
   <ol>
     {% for route_waypoint in route.route_waypoints.all %}
