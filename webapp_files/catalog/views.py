@@ -178,7 +178,7 @@ def route_export(request, pk):
     response = JsonResponse(
         route_to_geojson(route), content_type="application/geo+json"
     )
-    filename = f"{slugify(route.name) or 'route'}.geojson"
+    filename = f"{slugify(route.name) or 'route'}.json"
     # "attachment" makes the browser save the file instead of showing it.
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
