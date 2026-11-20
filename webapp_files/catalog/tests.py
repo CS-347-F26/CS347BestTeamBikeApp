@@ -717,6 +717,10 @@ class LandmarkTests(TestCase):
         self.assertContains(response, "Explore the map")
         self.assertContains(response, "Find and compare routes")
         self.assertContains(response, "Share route feedback")
+        self.assertContains(response, "Start a route")
+        self.assertContains(response, "Import, export, and manage routes")
+        self.assertContains(response, "Download as GeoJSON")
+        self.assertContains(response, "basic GPS guidance")
         self.assertContains(response, f'href="{reverse("help")}">Help</a>')
 
     def test_nav_marks_current_section(self):

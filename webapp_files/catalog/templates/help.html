@@ -6,71 +6,217 @@
   <article class="container py-4">
     <header class="mb-4">
       <h1>Help and Getting Started</h1>
-      <p>Learn how to explore Bike Transit and find a route that works for you.</p>
+      <p>
+        Learn how to explore Bike Transit, find a route, and use the features
+        that are currently available.
+      </p>
     </header>
 
     <nav aria-label="Help topics" class="mb-4">
       <ul>
-        <li><a href="#map">Explore the map</a></li>
+        <li><a href="#map">Explore the map and navigate</a></li>
         <li><a href="#routes">Find and compare routes</a></li>
+        <li><a href="#import-export">Import, export, and manage routes</a></li>
         <li><a href="#feedback">Share route feedback</a></li>
+        <li><a href="#locations">Find locations</a></li>
         <li><a href="#account">Accounts and installation</a></li>
+        <li><a href="#troubleshooting">Troubleshooting and limitations</a></li>
       </ul>
     </nav>
 
     <section id="map" class="mb-4">
-      <h2>Explore the map</h2>
+      <h2>Explore the map and navigate</h2>
       <p>
-        Open the <a href="{% url 'map' %}">map</a> to see routes and locations.
-        Solid lines are main routes; dashed lines are subroutes. Use the map
-        controls or touch gestures to zoom and pan. Select a named waypoint
-        marker to see its name.
+        Open the <a href="{% url 'map' %}">map</a> to explore bike routes and
+        locations around Harrisonburg, Virginia. Solid lines are main routes;
+        dashed subroutes use their main route's color. Use the map controls or
+        touch gestures to zoom and pan. Select a named waypoint marker to see
+        its name. Select a route line to see its name and comfort rating.
+      </p>
+
+      <h3>Start a route</h3>
+      <ol>
+        <li>On the map, select the route line you want to follow.</li>
+        <li>Select <strong>Go</strong> in the route popup.</li>
+        <li>
+          Allow your browser to use your location. Navigation uses GPS to show
+          your position and keep the map centered on you.
+        </li>
+        <li>
+          At connections between routes, the app may show route choices with
+          simple cues such as Continue straight, Turn left, or Turn right.
+          Select a choice to switch to that route. When no junction choices
+          are shown, stay on the selected route.
+        </li>
+        <li>Select <strong>End route</strong> when you are finished.</li>
+      </ol>
+      <p>
+        The navigation banner shows the selected route's comfort rating and
+        your distance from the nearest mapped route. That distance is not
+        distance to a destination or the next turn.
       </p>
     </section>
 
     <section id="routes" class="mb-4">
       <h2>Find and compare routes</h2>
       <ol>
-        <li>Open <a href="{% url 'route-list' %}">Routes</a> and enter a search term.</li>
+        <li>Open <a href="{% url 'route-list' %}">Routes</a>.</li>
         <li>
-          Choose whether the term should match route names, colors, or both.
-          If neither field is selected, both are searched.
+          Enter a search term and choose whether it matches route names, colors,
+          or both. If neither Name nor Color is checked, both are searched.
         </li>
         <li>
-          Optionally select Official to show official routes only, or choose a
-          comfort rating from 1 to 5 to show routes rated at least that high.
-          Select the chosen rating again to clear it.
+          Optionally select <strong>Official</strong> to show official routes
+          only, or choose a comfort rating from 1 to 5 to show routes rated at
+          least that high. A higher rating means more comfortable; a displayed
+          rating of 0 means no rating has been set. Unrated routes are left out
+          when a comfort rating is selected. Select the
+          chosen rating again or use Clear to remove filters.
         </li>
-        <li>Select Search to apply your choices, or Clear to show all routes again.</li>
+        <li>Select Search to apply your choices.</li>
       </ol>
       <p>
-        Select a route's Comments link to view its details and waypoints. The
-        detail page also links to the route feedback form.
+        Select a route's <strong>Comments</strong> link to open its details,
+        including waypoints and route information. The detail page also links
+        to feedback, export, and (for routes you imported) update and delete
+        actions.
+      </p>
+    </section>
+
+    <section id="import-export" class="mb-4">
+      <h2>Import, export, and manage routes</h2>
+
+      <h3>Import a route</h3>
+      <ol>
+        <li>
+          <a href="{% url 'login' %}">Sign in</a>; importing requires an
+          account. Open Routes and select <strong>Import a route</strong>.
+        </li>
+        <li>
+          Draw a line on <a href="https://geojson.io" target="_blank" rel="noopener">geojson.io</a>
+          and choose Save, then GeoJSON. Upload the resulting .geojson or .json
+          file.
+        </li>
+        <li>
+          If the file does not specify a route name or supported color, enter a
+          name or choose a color on the import form.
+        </li>
+      </ol>
+      <p>
+        Files can be up to 1 MB. Route lines need at least two valid points,
+        written in GeoJSON order (longitude, latitude), and must stay within
+        {{ area_name }}. Supported route colors are red,
+        yellow, black, purple, blue, green, orange, pink, maroon, and indigo.
+        The importer accepts GeoJSON line features and the project's
+        waypoints.json format; non-line features such as points and polygons
+        are skipped. A file with multiple line features can import multiple
+        routes.
+      </p>
+      <p>
+        Imported routes belong to the account that uploaded them and are only
+        visible to that account. After importing, find them in Routes.
+      </p>
+
+      <h3>Export or copy route data</h3>
+      <p>
+        Open a route's detail page and select <strong>Download as GeoJSON</strong>.
+        You can export any route visible to you. The browser saves a .geojson
+        file containing the route as JSON. The app does not display the raw
+        JSON or provide a copy button; to copy it, open the downloaded file in
+        a text editor. You can upload the file again or open it in geojson.io.
+      </p>
+
+      <h3>Update or delete an imported route</h3>
+      <p>
+        On the detail page for a route you imported, select
+        <strong>Update with a new file</strong> to replace its line. An update
+        file must contain one route line; existing feedback stays with the
+        route.
+      </p>
+      <p>
+        Select <strong>Delete route</strong> and confirm to permanently delete
+        your imported route. Any subroutes and feedback attached to it are
+        deleted too. Official routes and routes imported by other accounts
+        cannot be changed or deleted by you.
       </p>
     </section>
 
     <section id="feedback" class="mb-4">
       <h2>Share route feedback</h2>
       <p>
-        Open <a href="{% url 'feedback-route-selection' %}">Feedback</a>, choose
-        a route, and submit your comfort rating and optional comments. You need
-        to <a href="{% url 'login' %}">sign in</a> to submit feedback; create an
-        account first if you don't have one.
+        Open <a href="{% url 'feedback-route-selection' %}">Feedback</a> or a
+        route's detail page, choose the route, and submit a comfort rating from
+        1 (very uncomfortable) to 5 (very comfortable) with optional comments.
+        You need to sign in to submit feedback. Your profile shows recent
+        feedback and links to your full feedback list, where you can manage
+        your submissions.
       </p>
     </section>
 
-    <section id="account">
+    <section id="locations" class="mb-4">
+      <h2>Find locations</h2>
+      <p>
+        Open <a href="{% url 'location-list' %}">Locations</a> and select a
+        name to see its coordinates and the routes that pass through it.
+        Named waypoint markers on the map also show their names when selected.
+      </p>
+    </section>
+
+    <section id="account" class="mb-4">
       <h2>Accounts and installation</h2>
       <p>
-        Your profile shows your feedback and any saved routes, previous rides,
-        or marked locations associated with your account. Use Edit profile or
-        Change password from the profile page to manage your account.
+        You can browse routes without signing in. Sign in to import, update, or
+        delete your own routes and to submit feedback. If you do not have an
+        account, use <a href="{% url 'signup' %}">Sign up</a>.
       </p>
       <p>
-        To install BikeWay on a compatible device, use Install BikeWay on the
-        welcome page. On iPhone or iPad, open the site in Safari, choose Share,
-        then Add to Home Screen.
+        Your profile shows your recent feedback, previous rides, saved routes,
+        and marked locations when available. Choose Edit profile to change
+        your username, comfort level, or the <strong>Show my location on the
+        map</strong> setting, which controls whether your location is shown
+        automatically while browsing the map. Choose Change password to update
+        your password. Navigation still needs browser location permission.
       </p>
+      <p>
+        To install BikeWay on a compatible device, use <strong>Install
+        BikeWay</strong> on the welcome page. On iPhone or iPad, open the site
+        in Safari, choose Share, then Add to Home Screen.
+      </p>
+    </section>
+
+    <section id="troubleshooting">
+      <h2>Troubleshooting and limitations</h2>
+      <ul>
+        <li>
+          The map may ask to use your location when it opens or when you start
+          navigation. If your location does not appear, enable location
+          services on your device and allow this site to use location in your
+          browser settings, then reload the map. You can still browse routes
+          without sharing your location.
+        </li>
+        <li>
+          If map tiles do not load, check your internet connection and try
+          again. Map tiles come from external map providers.
+        </li>
+        <li>
+          If an import is rejected, check the form's error message. Common
+          causes are an invalid JSON file, unsupported color, too many bytes,
+          missing route line, invalid coordinate order, or points outside the
+          mapped area.
+        </li>
+        <li>
+          The <a href="{% url 'trip-new' %}">Plan a trip</a> page is not yet an
+          origin-and-destination planner. To follow an existing route, use
+          Map, select its line, and choose Go.
+        </li>
+        <li>
+          Map navigation is basic GPS guidance, not full turn-by-turn
+          navigation: it does not calculate a trip from an arbitrary start to
+          an end, give spoken directions, or automatically reroute you. GPS
+          accuracy and map data can vary. Check your surroundings and do not
+          interact with your device while riding.
+        </li>
+      </ul>
     </section>
   </article>
 {% endblock %}

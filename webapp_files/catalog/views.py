@@ -70,7 +70,11 @@ def index(request):
 
 def help_page(request):
     """Show in-app guidance for exploring Bike Transit."""
-    return render(request, "help.html")
+    return render(
+        request,
+        "help.html",
+        {"area_name": settings.ROUTE_AREA_NAME},
+    )
 
 
 # --- Routes ---------------------------------------------------------------
