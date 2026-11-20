@@ -256,8 +256,10 @@ def map_view(request):
     ):
         _log_route_loaded(request, route, "map")
         coordinates = []
+        waypoint_ids = []
         for route_waypoint in route.route_waypoints.all():
             waypoint = route_waypoint.waypoint
+            waypoint_ids.append(waypoint.pk)
             longitude = waypoint.longitude
             latitude = waypoint.latitude
             if (
@@ -285,14 +287,17 @@ def map_view(request):
         if len(coordinates) >= 2:
             routes.append(
                 {
+                    "id": route.pk,
                     "name": route.name,
                     "color": route.color,
+                    "comfortability": route.comfortability,
                     "route_type": route.route_type,
                     "is_official": route.is_official,
                     "parent_route": (
                         route.parent_route.name if route.parent_route_id else None
                     ),
                     "coordinates": coordinates,
+                    "waypoint_ids": waypoint_ids,
                 }
             )
 

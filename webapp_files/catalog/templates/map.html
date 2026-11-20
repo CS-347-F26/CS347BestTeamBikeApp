@@ -13,6 +13,8 @@
     href="https://unpkg.com/maplibre-gl@6.17.0/dist/maplibre-gl.css"
     crossorigin=""
   >
+
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -20,6 +22,20 @@
     <h1>Bike Transit Map</h1>
     <p>Explore bike routes and locations around Harrisonburg, Virginia.</p>
   </header>
+
+  <div id="navigation-ui" hidden>
+    <div id="navigation-options" aria-live="polite"></div>
+
+    <button id="end-navigation" type="button">
+      End route
+    </button>
+
+    <div id="navigation-summary">
+      <span id="navigation-comfort"></span>
+      <span id="navigation-distance"></span>
+    </div>
+  </div>
+
   <div
     id="bike-map"
     role="region"
@@ -64,6 +80,27 @@
     const locationSharingEnabled = JSON.parse(document.getElementById("location-sharing-enabled").textContent);
     const isLoggedIn = JSON.parse(document.getElementById("is-logged-in").textContent);
     const mapError = document.getElementById("map-error");
+
+    const navigationUi =
+      document.getElementById("navigation-ui");
+    const navigationOptions =
+      document.getElementById("navigation-options");
+    const navigationSummary =
+      document.getElementById("navigation-summary");
+    const navigationComfort =
+      document.getElementById("navigation-comfort");
+    const navigationDistance =
+      document.getElementById("navigation-distance");
+    const endNavigationButton =
+      document.getElementById("end-navigation");
+
+    const mapIntro =
+      document.querySelector(".map-intro");
+    const routeGlossary =
+      document.querySelector(".route-glossary");
+    const tabBar =
+      document.querySelector(".tab-bar");
+
     const map = new maplibregl.Map({
       container: "bike-map",
       style: "https://tiles.openfreemap.org/styles/liberty",
@@ -74,12 +111,89 @@
     const routeFeatures = mapData.routes.map((route) => ({
       type: "Feature",
       properties: {
+        id: route.id,
         name: route.name,
         routeType: route.route_type,
         color: route.color,
+        comfortability: route.comfortability,
       },
       geometry: { type: "LineString", coordinates: route.coordinates },
     }));
+
+    const routeLines = mapData.routes.map((route) =>
+      turf.lineString(route.coordinates, {
+        routeId: route.id,
+        routeName: route.name,
+        routeColor: route.color,
+        comfortability: route.comfortability,
+      })
+    );
+
+    const nodes = new Map();
+    const edges = [];
+
+    mapData.routes.forEach((route) => {
+      route.waypoint_ids.forEach((waypointId, index) => {
+        const coordinate = route.coordinates[index];
+
+        if (!nodes.has(waypointId)) {
+          nodes.set(waypointId, {
+            id: waypointId,
+            longitude: coordinate[0],
+            latitude: coordinate[1],
+            routeIds: new Set(),
+          });
+        }
+
+        nodes
+          .get(waypointId)
+          .routeIds
+          .add(route.id);
+      });
+
+      for (
+        let index = 0;
+        index < route.waypoint_ids.length - 1;
+        index += 1
+      ) {
+        const firstId = route.waypoint_ids[index];
+        const secondId = route.waypoint_ids[index + 1];
+
+        const first = nodes.get(firstId);
+        const second = nodes.get(secondId);
+
+        const distance = turf.distance(
+          turf.point([
+            first.longitude,
+            first.latitude,
+          ]),
+          turf.point([
+            second.longitude,
+            second.latitude,
+          ]),
+          { units: "meters" }
+        );
+
+        edges.push({
+          from: firstId,
+          to: secondId,
+          routeId: route.id,
+          routeName: route.name,
+          routeColor: route.color,
+          distance,
+        });
+
+        edges.push({
+          from: secondId,
+          to: firstId,
+          routeId: route.id,
+          routeName: route.name,
+          routeColor: route.color,
+          distance,
+        });
+      }
+    });
+
     const isValidPoint = (point) =>
       Array.isArray(point) &&
       point.length === 2 &&
@@ -90,7 +204,8 @@
       point[1] >= -90 &&
       point[1] <= 90;
 
-    map.addControl(new maplibregl.NavigationControl(), "top-left");
+    const navigationControl = new maplibregl.NavigationControl();
+    map.addControl(navigationControl, "top-left");
 
     const geolocate = new maplibregl.GeolocateControl({
       positionOptions: {
@@ -101,6 +216,430 @@
     });
 
     map.addControl(geolocate, "top-right");
+
+    const userLocationElement =
+      document.createElement("div");
+    userLocationElement.className =
+      "bike-user-location";
+
+    const userLocationMarker =
+      new maplibregl.Marker({
+        element: userLocationElement,
+      })
+        .setLngLat([-78.8689, 38.4496])
+        .addTo(map);
+    userLocationMarker.getElement().hidden = true;
+
+    let activeNavigationRoute = null;
+    let currentSnappedLocation = null;
+    let previousNavigationPosition = null;
+    let movementHeading = null;
+    let currentGpsPosition = null;
+    let lastNearestRoute = null;
+
+    function updateNavigationSummary(route, nearest) {
+      if (!nearest) {
+        navigationComfort.textContent =
+          `Comfort ${route.comfortability}/5`;
+        navigationDistance.textContent = "-- m";
+        return;
+      }
+
+      navigationComfort.textContent =
+        `Comfort ${route.comfortability}/5`;
+      navigationDistance.textContent =
+        `${Math.round(nearest.distanceMeters)} m`;
+    }
+
+    function startNavigation(selectedRoute) {
+      activeNavigationRoute = selectedRoute;
+
+      if (currentGpsPosition) {
+        lastNearestRoute = findNearestRoute(
+          currentGpsPosition[0],
+          currentGpsPosition[1]
+        );
+      }
+
+      document.body.classList.add("navigation-mode");
+
+      navigationUi.hidden = false;
+      mapIntro.hidden = true;
+      routeGlossary.hidden = true;
+
+      if (tabBar) {
+        tabBar.hidden = true;
+      }
+
+      map.removeControl(navigationControl);
+      map.easeTo({ zoom: 16 });
+      map.resize();
+
+      navigationOptions.replaceChildren();
+
+      const routeBar =
+        document.createElement("button");
+
+      routeBar.type = "button";
+      routeBar.textContent =
+        selectedRoute
+          ? selectedRoute.name
+          : "Navigation mode";
+
+      routeBar.style.backgroundColor =
+        selectedRoute?.color || "#084c61";
+
+      navigationOptions.appendChild(routeBar);
+
+      if (selectedRoute) {
+        updateNavigationSummary(
+          selectedRoute,
+          lastNearestRoute
+        );
+      } else {
+        navigationComfort.textContent = "";
+        navigationDistance.textContent = "";
+      }
+
+      geolocate.trigger();
+    }
+
+    function endNavigation() {
+      activeNavigationRoute = null;
+      currentSnappedLocation = null;
+      lastNearestRoute = null;
+      navigationOptions.replaceChildren();
+      navigationComfort.textContent = "";
+      navigationDistance.textContent = "";
+      document.body.classList.remove("navigation-mode");
+
+      navigationUi.hidden = true;
+      mapIntro.hidden = false;
+      routeGlossary.hidden = false;
+
+      if (tabBar) {
+        tabBar.hidden = false;
+      }
+
+      map.addControl(navigationControl, "top-left");
+      map.resize();
+
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds, {
+          padding: 24,
+          maxZoom: 15,
+        });
+      }
+    }
+
+    endNavigationButton.addEventListener(
+      "click",
+      endNavigation
+    );
+
+    function findNearestRoute(longitude, latitude) { // Find the route closest to the given coordinates
+      const position =
+        turf.point([longitude, latitude]);
+
+      const snaps = routeLines.map((routeLine) => {
+        const snapped = turf.nearestPointOnLine(
+          routeLine,
+          position,
+          { units: "meters" }
+        );
+
+        return {
+          routeId: routeLine.properties.routeId,
+          snapped,
+          distanceMeters: snapped.properties.dist,
+        };
+      });
+
+      snaps.sort(
+        (first, second) =>
+          first.distanceMeters -
+          second.distanceMeters
+      );
+
+      const nearest = snaps[0];
+
+      return {
+        route: mapData.routes.find(
+          (route) =>
+            route.id === nearest.routeId
+        ),
+        snappedCoordinate:
+          nearest.snapped.geometry.coordinates,
+        distanceMeters: nearest.distanceMeters,
+      };
+    }
+
+    function relativeDirection(
+      incomingHeading,
+      outgoingHeading
+    ) {
+      if (incomingHeading === null) {
+        return "Available";
+      }
+
+      let angle =
+        outgoingHeading -
+        incomingHeading;
+
+      angle =
+        ((angle + 540) % 360) -
+        180;
+
+      if (Math.abs(angle) <= 35) {
+        return "Continue straight";
+      }
+
+      if (angle < 0) {
+        return "Turn left";
+      }
+
+      return "Turn right";
+    }
+
+    function updateNavigationOptions(
+      longitude,
+      latitude,
+      heading
+    ) {
+      const position =
+        turf.point([
+          longitude,
+          latitude,
+        ]);
+
+      navigationOptions.replaceChildren();
+
+      if (
+        !activeNavigationRoute
+      ) {
+        return;
+      }
+
+      const nearbyMerges = [];
+
+      nodes.forEach((node) => {
+        if (node.routeIds.size < 2) {
+          return;
+        }
+
+        const nodePoint =
+          turf.point([
+            node.longitude,
+            node.latitude,
+          ]);
+
+        nearbyMerges.push({
+          node,
+          distance: turf.distance(
+            position,
+            nodePoint,
+            { units: "meters" }
+          ),
+        });
+      });
+
+      nearbyMerges.sort(
+        (first, second) =>
+          first.distance -
+          second.distance
+      );
+
+      if (
+        nearbyMerges.length === 0 ||
+        nearbyMerges[0].distance > 50
+      ) {
+        const routeBar =
+          document.createElement("button");
+
+        routeBar.type = "button";
+        routeBar.textContent =
+          `${activeNavigationRoute.name} - Continue`;
+
+        routeBar.style.backgroundColor =
+          activeNavigationRoute.color;
+
+        navigationOptions.appendChild(
+          routeBar
+        );
+
+        return;
+      }
+
+      const mergeNode =
+        nearbyMerges[0].node;
+
+      const outgoingByRoute =
+        new Map();
+
+      edges.forEach((edge) => {
+        if (
+          edge.from !== mergeNode.id
+        ) {
+          return;
+        }
+
+        if (
+          outgoingByRoute.has(
+            edge.routeId
+          )
+        ) {
+          return;
+        }
+
+        const neighbor =
+          nodes.get(edge.to);
+
+        if (!neighbor) {
+          return;
+        }
+
+        const outgoingHeading =
+          turf.bearing(
+            turf.point([
+              mergeNode.longitude,
+              mergeNode.latitude,
+            ]),
+            turf.point([
+              neighbor.longitude,
+              neighbor.latitude,
+            ])
+          );
+
+        outgoingByRoute.set(
+          edge.routeId,
+          outgoingHeading
+        );
+      });
+
+      outgoingByRoute.forEach(
+        (outgoingHeading, routeId) => {
+          const route =
+            mapData.routes.find(
+              (candidate) =>
+                candidate.id === routeId
+            );
+
+          if (!route) {
+            return;
+          }
+
+          const instruction =
+            relativeDirection(
+              heading,
+              outgoingHeading
+            );
+
+          const routeBar =
+            document.createElement("button");
+
+          routeBar.type = "button";
+          routeBar.textContent =
+            route.id === activeNavigationRoute.id
+              ? `${route.name} - ${instruction}`
+              : `${route.name} - ${instruction}`;
+
+          routeBar.style.backgroundColor =
+            route.color;
+
+          routeBar.addEventListener(
+            "click",
+            () => {
+              activeNavigationRoute = route;
+              updateNavigationSummary(
+                route,
+                lastNearestRoute
+              );
+            }
+          );
+
+          navigationOptions.appendChild(
+            routeBar
+          );
+        }
+      );
+    }
+
+    geolocate.on("geolocate", (event) => { // Handle live geolocation updates
+      const longitude =
+        event.coords.longitude;
+
+      const latitude =
+        event.coords.latitude;
+
+      userLocationMarker
+        .setLngLat([longitude, latitude]);
+      userLocationMarker.getElement().hidden =
+        false;
+
+      if (
+        navigationUi.hidden ||
+        !activeNavigationRoute
+      ) {
+        return;
+      }
+
+      map.easeTo({
+        center: [longitude, latitude],
+        duration: 400,
+      });
+
+      currentGpsPosition =
+        [longitude, latitude];
+      
+      const heading =
+        Number.isFinite(event.coords.heading) &&
+        event.coords.heading >= 0
+          ? event.coords.heading
+          : null;
+
+      if (heading !== null) {
+        movementHeading = heading;
+      } else if (previousNavigationPosition) {
+        movementHeading = turf.bearing(
+          turf.point(previousNavigationPosition),
+          turf.point([longitude, latitude])
+        );
+      }
+
+      previousNavigationPosition =
+        [longitude, latitude];
+
+      const nearest =
+        findNearestRoute(
+          longitude,
+          latitude
+        );
+
+      lastNearestRoute = nearest;
+
+      currentSnappedLocation =
+        nearest.snappedCoordinate;
+
+      updateNavigationOptions(
+        longitude,
+        latitude,
+        movementHeading
+      );
+
+      if (
+        nearest.distanceMeters <= 30 // means the user is close enough to be considered on a route, can be adjusted as needed
+      ) {
+        navigationComfort.textContent =
+          `Comfort ${activeNavigationRoute.comfortability}/5`;
+        navigationDistance.textContent =
+          `${Math.round(nearest.distanceMeters)} m`;
+      } else {
+        navigationComfort.textContent =
+          `Comfort ${activeNavigationRoute.comfortability}/5`;
+        navigationDistance.textContent =
+          `${Math.round(nearest.distanceMeters)} m`;
+      }
+    });
 
     map.on("error", () => {
       mapError.hidden = false;
@@ -176,6 +715,36 @@
           "circle-stroke-width": 1.5,
         },
       });
+
+      function openRoutePopup(event) {
+        const feature = event.features[0];
+
+        const popup = new maplibregl.Popup()
+          .setLngLat(event.lngLat)
+          .setHTML(
+            `<strong>${feature.properties.name}</strong>`
+            + `<p>Comfort: ${feature.properties.comfortability}/5</p>`
+            + `<button type="button" data-start-route="${feature.properties.id}">
+                Go
+              </button>`
+          )
+          .addTo(map);
+
+        const goButton =
+          document.querySelector("[data-start-route]");
+
+        goButton.addEventListener("click", () => {
+          const selectedRoute = mapData.routes.find(
+            route => route.id === Number(goButton.dataset.startRoute)
+          );
+
+          popup.remove();
+          startNavigation(selectedRoute);
+        });
+      }
+
+      map.on("click", "main-routes", openRoutePopup);
+      map.on("click", "sub-routes", openRoutePopup);
 
       if (!navigator.geolocation) { // check if the browser supports geolocation
         mapError.textContent =
