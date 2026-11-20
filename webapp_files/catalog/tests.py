@@ -1521,7 +1521,7 @@ class RouteImportTests(TestCase):
         response = self.client.get(reverse("route-export", args=[main.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/geo+json")
-        self.assertIn('filename="test-main.geojson"', response["Content-Disposition"])
+        self.assertIn('filename="test-main.json"', response["Content-Disposition"])
         data = json.loads(response.content)
         line, point = data["features"]
         self.assertEqual(data["type"], "FeatureCollection")
