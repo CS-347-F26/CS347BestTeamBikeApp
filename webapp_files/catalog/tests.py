@@ -808,8 +808,12 @@ class RouteSearchTests(TestCase):
         html = self.client.get(reverse("route-list")).content.decode()
         self.assertIn('role="search"', html)
         self.assertIn('type="search" name="q"', html)
-        self.assertIn('aria-controls="comfort-filter"', html)
         self.assertEqual(html.count('name="comfort"'), 5)
+        # The comfort card is always on the page; there's no Filter button
+        # or drop-down panel any more.
+        self.assertIn('class="comfort-filter"', html)
+        self.assertNotIn('data-bs-toggle="collapse"', html)
+        self.assertIn("comfort-unpick.js", html)
 
     def test_choices_are_kept_after_submit(self):
         html = self.client.get(
@@ -817,8 +821,80 @@ class RouteSearchTests(TestCase):
         ).content.decode()
         self.assertIn('value="blue"', html)
         self.assertRegex(html, r'value="4"[^>]*checked')
-        self.assertIn('class="collapse show"', html)  # panel stays open
-        self.assertIn("4+", html)  # badge on the Filter button
+        self.assertIn("comfort 4+", html)  # in the "Showing n routes" line
+
+
+class RouteSearchCheckboxTests(TestCase):
+    """The Name / Color / Official pills under the search bar.
+    ?search_in=name|color picks which fields the search text is matched
+    against (none = both); ?official=on keeps only official routes."""
+
+    def setUp(self):
+        _delete_all_routes()
+        Route.objects.create(name="Yellow", color="Yellow")
+        Route.objects.create(name="Friendly City Trail", color="yellow")
+        Route.objects.create(
+            name="Community Yellow Loop", color="Red", is_official=False
+        )
+
+    def names(self, **params):
+        response = self.client.get(reverse("route-list"), params)
+        self.assertEqual(response.status_code, 200)
+        return [route.name for route in response.context["route_list"]]
+
+    def test_no_box_searches_name_and_color(self):
+        self.assertEqual(
+            self.names(q="yellow"),
+            ["Community Yellow Loop", "Friendly City Trail", "Yellow"],
+        )
+
+    def test_name_box_only_matches_names(self):
+        self.assertEqual(
+            self.names(q="yellow", search_in="name"),
+            ["Community Yellow Loop", "Yellow"],
+        )
+
+    def test_color_box_only_matches_colors(self):
+        self.assertEqual(
+            self.names(q="yellow", search_in="color"),
+            ["Friendly City Trail", "Yellow"],
+        )
+        self.assertEqual(self.names(q="trail", search_in="color"), [])
+
+    def test_both_boxes_match_either(self):
+        self.assertEqual(
+            self.names(q="yellow", search_in=["name", "color"]),
+            self.names(q="yellow"),
+        )
+
+    def test_official_works_without_search_text(self):
+        self.assertEqual(self.names(official="on"), ["Friendly City Trail", "Yellow"])
+
+    def test_official_combines_with_search_and_comfort(self):
+        Route.objects.filter(name="Yellow").update(comfortability=4)
+        self.assertEqual(
+            self.names(q="yellow", search_in="name", official="on"), ["Yellow"]
+        )
+        self.assertEqual(self.names(official="on", comfort=4), ["Yellow"])
+
+    def test_bad_search_in_value_is_ignored(self):
+        self.assertEqual(len(self.names(q="yellow", search_in="zzz")), 3)
+
+    def test_boxes_stay_checked_after_submit(self):
+        html = self.client.get(
+            reverse("route-list"),
+            {"q": "yellow", "search_in": "name", "official": "on"},
+        ).content.decode()
+        self.assertRegex(html, r'name="search_in" value="name"[^>]*checked')
+        self.assertNotRegex(html, r'name="search_in" value="color"[^>]*checked')
+        self.assertRegex(html, r'name="official"[^>]*checked')
+        self.assertIn("“yellow” in name, official only", html)
+
+    def test_pills_render_unchecked_by_default(self):
+        html = self.client.get(reverse("route-list")).content.decode()
+        self.assertEqual(html.count('name="search_in"'), 2)
+        self.assertIn('name="official"', html)
+        self.assertNotIn("checked", html)
 
 
 class FeedbackRouteSelectionPageTests(TestCase):

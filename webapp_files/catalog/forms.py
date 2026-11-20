@@ -44,12 +44,23 @@ class StyledAuthenticationForm(AuthenticationForm):
 
 
 class RouteSearchForm(forms.Form):
-    """Search and filter on the routes page (GET /routes/?q=...&comfort=...).
+    """Search and filter on the routes page, e.g.
+    GET /routes/?q=yellow&search_in=name&official=on&comfort=3
 
-    Both fields are optional. A bad value (e.g. ?comfort=9) makes the form
-    invalid, and the view then just shows every route instead of crashing."""
+    Every field is optional. A bad value (e.g. ?comfort=9 or ?search_in=zzz)
+    makes the form invalid, and the view then just shows every route instead
+    of crashing."""
 
     q = forms.CharField(label="Search routes", required=False, max_length=100)
+    # Which route fields the search text is matched against. None checked
+    # means both (see RouteListView.get_queryset).
+    search_in = forms.MultipleChoiceField(
+        label="Search in",
+        choices=[("name", "Name"), ("color", "Color")],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    official = forms.BooleanField(label="Official routes only", required=False)
     comfort = forms.TypedChoiceField(
         label="Minimum comfort",
         choices=[(n, str(n)) for n in range(1, 6)],

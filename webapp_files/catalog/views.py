@@ -11,6 +11,8 @@ from django.views import generic
 from django.contrib import messages
 from django.db import transaction
 from django.views.decorators.http import require_GET
+from django.http import HttpResponse
+from pathlib import Path
 
 from .models import User, Route, RouteWaypoint, Location, RouteFeedback
 from .forms import ProfileForm, RouteFeedbackForm, RouteSearchForm, SignUpForm
@@ -69,20 +71,31 @@ class RouteListView(generic.ListView):
 
     def get_queryset(self):
         """Narrow the list with the search form's GET values:
-        q       -> route name or color contains this text (any case)
-        comfort -> route's comfort rating is at least this (1-5).
+        q         -> the text is contained (any case) in the fields below
+        search_in -> which fields to search: "name", "color", or both.
+                     None checked means both.
+        official  -> only routes with is_official=True (works without q)
+        comfort   -> route's comfort rating is at least this (1-5).
         Unrated routes (comfortability 0) drop out once a comfort is picked."""
         routes = super().get_queryset()
         self.form = RouteSearchForm(self.request.GET)
         self.query = ""
+        self.search_in = []
+        self.official = False
         self.min_comfort = None
         if self.form.is_valid():
             self.query = self.form.cleaned_data["q"].strip()
+            self.search_in = self.form.cleaned_data["search_in"]
+            self.official = self.form.cleaned_data["official"]
             self.min_comfort = self.form.cleaned_data["comfort"]
         if self.query:
-            routes = routes.filter(
-                Q(name__icontains=self.query) | Q(color__icontains=self.query)
-            )
+            # One "contains" test per chosen field, joined with OR (|).
+            match = Q()
+            for field in self.search_in or ["name", "color"]:
+                match |= Q(**{f"{field}__icontains": self.query})
+            routes = routes.filter(match)
+        if self.official:
+            routes = routes.filter(is_official=True)
         if self.min_comfort is not None:
             routes = routes.filter(comfortability__gte=self.min_comfort)
         return routes
@@ -91,8 +104,24 @@ class RouteListView(generic.ListView):
         context = super().get_context_data(**kwargs)
         context["form"] = self.form
         context["query"] = self.query
+        context["search_in"] = self.search_in
+        context["official"] = self.official
         context["min_comfort"] = self.min_comfort
-        context["is_filtered"] = bool(self.query) or self.min_comfort is not None
+        context["is_filtered"] = (
+            bool(self.query) or self.official or self.min_comfort is not None
+        )
+        # Plain-words list of the active filters for the "Showing n routes:
+        # ..." line, e.g. ['matching "yellow" in name', "official only",
+        # "comfort 3+"].
+        summary = []
+        if self.query:
+            where = f" in {self.search_in[0]}" if len(self.search_in) == 1 else ""
+            summary.append(f"matching “{self.query}”{where}")
+        if self.official:
+            summary.append("official only")
+        if self.min_comfort is not None:
+            summary.append(f"comfort {self.min_comfort}+")
+        context["filter_summary"] = summary
         for route in context["object_list"]:
             _log_route_loaded(self.request, route, "list")
         return context
@@ -411,3 +440,19 @@ def signup(request):
     else:
         form = SignUpForm()
     return render(request, "registration/signup.html", {"form": form})
+
+@require_GET
+def service_worker(request):
+    worker_path = (
+        Path(__file__).resolve().parent
+        / "static"
+        / "catalog"
+        / "js"
+        / "service-worker.js"
+    )
+
+    return HttpResponse(
+        worker_path.read_text(),
+        content_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/"},
+    )

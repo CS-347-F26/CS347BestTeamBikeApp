@@ -50,3 +50,23 @@ main {
   font-size: 1.05rem;
   line-height: 1.6;
 }
+
+.landing-install-button {
+  width: fit-content;
+  min-height: 44px;
+  max-width: calc(100% - 2rem);
+  margin: 1.25rem auto 0;
+  padding: 0.65rem 1.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--color-primary);
+  color: white;
+  font-weight: 700;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.landing-install-button:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
