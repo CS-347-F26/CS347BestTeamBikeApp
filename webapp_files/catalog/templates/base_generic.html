@@ -68,11 +68,19 @@
                         <li class="nav-item">
                             {% if name == 'route-list' or name == 'route-detail' %}<a class="nav-link active" aria-current="page"{% else %}<a class="nav-link"{% endif %} href="{% url 'route-list' %}">Routes</a>
                         </li>
+                        {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            {% if name == 'route-import' %}<a class="nav-link active" aria-current="page"{% else %}<a class="nav-link"{% endif %} href="{% url 'route-import' %}">Import a route</a>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             {% if name == 'location-list' or name == 'location-detail' %}<a class="nav-link active" aria-current="page"{% else %}<a class="nav-link"{% endif %} href="{% url 'location-list' %}">Locations</a>
                         </li>
                         <li class="nav-item">
                             {% if name == 'trip-new' %}<a class="nav-link active" aria-current="page"{% else %}<a class="nav-link"{% endif %} href="{% url 'trip-new' %}">Plan a trip</a>
+                        </li>
+                        <li class="nav-item">
+                            {% if name == 'help' %}<a class="nav-link active" aria-current="page"{% else %}<a class="nav-link"{% endif %} href="{% url 'help' %}">Help</a>
                         </li>
                         <li class="nav-item">
                             {% if name == 'feedback-route-selection' or name == 'feedback-form' or name == 'feedback-confirmation' or name == 'post-ride-feedback-prompt' %}<a class="nav-link active" aria-current="page"{% else %}<a class="nav-link"{% endif %} href="{% url 'feedback-route-selection' %}">Feedback</a>

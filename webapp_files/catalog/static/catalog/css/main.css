@@ -165,7 +165,8 @@ body {
 .route-color--blue   { --route-bg: #d6e6fa; --route-ink: #1e4e8c; }
 .route-color--green  { --route-bg: #d7f0da; --route-ink: #1f6b2e; }
 /* Colors used by the official Harrisonburg routes (orange 5.1, pink 6.0,
-   maroon 8.4 name-on-tint contrast). */
+   maroon 8.4, indigo 10+ name-on-tint contrast). */
 .route-color--orange { --route-bg: #fde3cc; --route-ink: #9a4a00; }
 .route-color--pink   { --route-bg: #fbdbe9; --route-ink: #9d1d5a; }
 .route-color--maroon { --route-bg: #ecd6da; --route-ink: #6b1a2a; }
+.route-color--indigo { --route-bg: #dfdcf5; --route-ink: #32277a; }

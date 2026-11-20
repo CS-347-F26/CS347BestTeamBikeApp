@@ -1,0 +1,32 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}Delete route{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+  <section class="auth-card" aria-labelledby="delete-title">
+    <h1 id="delete-title" class="auth-title">Delete this route?</h1>
+
+    <p class="auth-warning">
+      Are you sure you want to delete <strong>{{ route.name }}</strong>?
+      {% with subroutes=route.subroutes.all %}
+        {% if subroutes %}
+          Its subroute{{ subroutes|length|pluralize }}
+          {% for subroute in subroutes %}<strong>{{ subroute.name }}</strong>{% if not forloop.last %}, {% endif %}{% endfor %}
+          will be deleted too.
+        {% endif %}
+      {% endwith %}
+      Any feedback on it is deleted as well. This can't be undone.
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="auth-submit auth-submit--danger">Yes, delete it</button>
+      <a class="auth-secondary" href="{{ route.get_absolute_url }}">Cancel</a>
+    </form>
+  </section>
+{% endblock %}

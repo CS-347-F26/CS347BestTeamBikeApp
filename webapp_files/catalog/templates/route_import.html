@@ -1,0 +1,49 @@
+{% extends "base_generic.html" %}
+{% load static %}
+
+{% block title %}{% if route %}Update {{ route.name }}{% else %}Import a route{% endif %}{% endblock %}
+
+{% block page_css %}
+  <link rel="stylesheet" href="{% static 'catalog/css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+  <section class="auth-card" aria-labelledby="import-title">
+    {# The same page updates an existing route when the view passes `route`. #}
+    <h1 id="import-title" class="auth-title">{% if route %}Update {{ route.name }}{% else %}Import a route{% endif %}</h1>
+    <p class="auth-subtitle">
+      {% if route %}Upload a new file to replace this route's line. Its feedback stays.{% endif %}
+      Draw your route as a line on
+      <a href="https://geojson.io" target="_blank" rel="noopener">geojson.io</a>,
+      then choose Save → GeoJSON and upload the file here.
+      Routes must stay within {{ area_name }}.
+    </p>
+
+    {% if form.non_field_errors %}
+      <div class="auth-error" role="alert">
+        {% for error in form.non_field_errors %}{{ error }} {% endfor %}
+      </div>
+    {% endif %}
+
+    {# enctype is required for file uploads, or request.FILES stays empty. #}
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      {% for field in form %}
+        <div class="auth-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}
+            <div class="auth-field-error" role="alert">{{ error }}</div>
+          {% endfor %}
+          {% if field.help_text %}
+            <div id="{{ field.auto_id }}_helptext" class="auth-help">{{ field.help_text }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <button type="submit" class="auth-submit">{% if route %}Save changes{% else %}Import route{% endif %}</button>
+      <a class="auth-secondary" href="{% if route %}{{ route.get_absolute_url }}{% else %}{% url 'route-list' %}{% endif %}">Cancel</a>
+    </form>
+  </section>
+{% endblock %}

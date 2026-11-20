@@ -1,6 +1,7 @@
 import logging
 from math import isfinite
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.db import DatabaseError, connection
@@ -15,7 +16,16 @@ from django.http import HttpResponse
 from pathlib import Path
 
 from .models import User, Route, RouteWaypoint, Location, RouteFeedback
-from .forms import ProfileForm, RouteFeedbackForm, RouteSearchForm, SignUpForm
+from .forms import (
+    ProfileForm,
+    RouteFeedbackForm,
+    RouteImportForm,
+    RouteSearchForm,
+    SignUpForm,
+)
+from django.utils.text import slugify
+
+from .route_import import delete_route, replace_route, route_to_geojson, save_routes
 
 route_logger = logging.getLogger("catalog.routes")
 health_logger = logging.getLogger("catalog.health")
@@ -47,7 +57,7 @@ def index(request):
 
     # Generate counts of the users and routes
     num_users = User.objects.count()
-    num_routes = Route.objects.count()
+    num_routes = Route.objects.filter(is_official=True).count()
 
     context = {
         "num_users": num_users,
@@ -56,6 +66,11 @@ def index(request):
 
     # Render the HTML template index.html with the data in the context variable
     return render(request, "index.html", context=context)
+
+
+def help_page(request):
+    """Show in-app guidance for exploring Bike Transit."""
+    return render(request, "help.html")
 
 
 # --- Routes ---------------------------------------------------------------
@@ -76,8 +91,9 @@ class RouteListView(generic.ListView):
                      None checked means both.
         official  -> only routes with is_official=True (works without q)
         comfort   -> route's comfort rating is at least this (1-5).
-        Unrated routes (comfortability 0) drop out once a comfort is picked."""
-        routes = super().get_queryset()
+        Unrated routes (comfortability 0) drop out once a comfort is picked.
+        Other riders' imported routes are never listed (visible_to)."""
+        routes = Route.objects.visible_to(self.request.user)
         self.form = RouteSearchForm(self.request.GET)
         self.query = ""
         self.search_in = []
@@ -133,10 +149,114 @@ class RouteDetailView(generic.DetailView):
     model = Route
     template_name = "route_detail.html"
 
+    def get_queryset(self):
+        # Another rider's private route is a 404, as if it didn't exist.
+        return Route.objects.visible_to(self.request.user).select_related(
+            "parent_route", "created_by"
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         _log_route_loaded(self.request, self.object, "detail")
         return context
+
+
+@require_GET
+def route_export(request, pk):
+    """Download one route as a GeoJSON file: /routes/<pk>/export/
+
+    The file opens in geojson.io and can be uploaded again on the import
+    page. Anyone who can see the route page can download it."""
+    route = get_object_or_404(
+        Route.objects.visible_to(request.user).select_related("parent_route"), pk=pk
+    )
+    _log_route_loaded(request, route, "export")
+    response = JsonResponse(
+        route_to_geojson(route), content_type="application/geo+json"
+    )
+    filename = f"{slugify(route.name) or 'route'}.geojson"
+    # "attachment" makes the browser save the file instead of showing it.
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+def route_import(request):
+    """Upload a GeoJSON file to add user-made routes: /routes/import/
+
+    GET shows the form; POST parses the file (in RouteImportForm.clean) and
+    saves every line in it as a route owned by the rider."""
+    if request.method == "POST":
+        form = RouteImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            result = form.cleaned_data["parsed"]
+            routes = save_routes(result.routes, request.user)
+            names = ", ".join(route.name for route in routes)
+            message = (
+                f"Imported {len(routes)} route{'s' if len(routes) != 1 else ''}: "
+                f"{names}."
+            )
+            if result.skipped:
+                message += (
+                    f" Skipped {result.skipped} feature"
+                    f"{'s' if result.skipped != 1 else ''} that "
+                    f"{'aren’t lines' if result.skipped != 1 else 'isn’t a line'}."
+                )
+            messages.success(request, message)
+            if len(routes) == 1:
+                return redirect(routes[0])
+            return redirect("route-list")
+    else:
+        form = RouteImportForm()
+    return render(
+        request,
+        "route_import.html",
+        {"form": form, "area_name": settings.ROUTE_AREA_NAME},
+    )
+
+
+def _own_route_or_404(request, pk):
+    """The logged-in rider's own imported route. Anyone else's route, and
+    every official route, is a 404."""
+    return get_object_or_404(
+        Route.objects.prefetch_related("subroutes"),
+        pk=pk,
+        created_by=request.user,
+        is_official=False,
+    )
+
+
+@login_required
+def route_edit(request, pk):
+    """Replace one of your imported routes with a new file:
+    /routes/<pk>/edit/  (reuses the import form and page)."""
+    route = _own_route_or_404(request, pk)
+    if request.method == "POST":
+        form = RouteImportForm(request.POST, request.FILES, route=route)
+        if form.is_valid():
+            replace_route(route, form.cleaned_data["parsed"].routes[0])
+            messages.success(request, f"{route.name} was updated.")
+            return redirect(route)
+    else:
+        form = RouteImportForm(route=route)
+    return render(
+        request,
+        "route_import.html",
+        {"form": form, "route": route, "area_name": settings.ROUTE_AREA_NAME},
+    )
+
+
+@login_required
+def route_delete(request, pk):
+    """Ask for confirmation (GET), then delete one of your imported routes
+    and its subroutes (POST): /routes/<pk>/delete/"""
+    route = _own_route_or_404(request, pk)
+    if request.method == "POST":
+        name = route.name
+        delete_route(route)
+        messages.success(request, f"{name} was deleted.")
+        return redirect("route-list")
+    return render(request, "route_confirm_delete.html", {"route": route})
 
 
 # --- Route feedback -------------------------------------------------------
@@ -149,7 +269,7 @@ def feedback_route_selection(request):
     return render(
         request,
         "feedback_route_selection.html",
-        {"route_list": Route.objects.all()},
+        {"route_list": Route.objects.visible_to(request.user)},
     )
 
 
@@ -160,7 +280,7 @@ def feedback_form(request, pk):
     After a successful save we redirect back to this same page (so a refresh
     can't submit twice) and leave a one-time note in the session, which the
     next GET turns into the "thank you" popup."""
-    route = get_object_or_404(Route, pk=pk)
+    route = get_object_or_404(Route.objects.visible_to(request.user), pk=pk)
     _log_route_loaded(request, route, "feedback_form")
     if request.method == "POST":
         form = RouteFeedbackForm(request.POST)
@@ -183,7 +303,7 @@ def feedback_form(request, pk):
 
 def post_ride_feedback_prompt(request, pk):
     """Ask whether the user wants to give feedback after completing a route."""
-    route = get_object_or_404(Route, pk=pk)
+    route = get_object_or_404(Route.objects.visible_to(request.user), pk=pk)
     _log_route_loaded(request, route, "post_ride_prompt")
     return render(
         request,
@@ -194,7 +314,7 @@ def post_ride_feedback_prompt(request, pk):
 
 def feedback_confirmation(request, pk):
     """Display confirmation after feedback on a route is submitted."""
-    route = get_object_or_404(Route, pk=pk)
+    route = get_object_or_404(Route.objects.visible_to(request.user), pk=pk)
     _log_route_loaded(request, route, "feedback_confirmation")
     return render(
         request,
@@ -246,13 +366,16 @@ def map_view(request):
     named_waypoint_ids = set()
     routes = []
     route_waypoints = RouteWaypoint.objects.select_related("waypoint").order_by("order")
-    for route in Route.objects.select_related("parent_route").prefetch_related(
+    visible = Route.objects.visible_to(request.user)
+    for route in visible.select_related("parent_route").prefetch_related(
         Prefetch("route_waypoints", queryset=route_waypoints)
     ):
         _log_route_loaded(request, route, "map")
         coordinates = []
+        waypoint_ids = []
         for route_waypoint in route.route_waypoints.all():
             waypoint = route_waypoint.waypoint
+            waypoint_ids.append(waypoint.pk)
             longitude = waypoint.longitude
             latitude = waypoint.latitude
             if (
@@ -280,14 +403,17 @@ def map_view(request):
         if len(coordinates) >= 2:
             routes.append(
                 {
+                    "id": route.pk,
                     "name": route.name,
                     "color": route.color,
+                    "comfortability": route.comfortability,
                     "route_type": route.route_type,
                     "is_official": route.is_official,
                     "parent_route": (
                         route.parent_route.name if route.parent_route_id else None
                     ),
                     "coordinates": coordinates,
+                    "waypoint_ids": waypoint_ids,
                 }
             )
 
@@ -299,7 +425,12 @@ def map_view(request):
                 "locations": locations,
                 "routes": routes,
                 "named_waypoints": named_waypoints,
-            }
+            },
+            "location_sharing_enabled": (
+                request.user.is_authenticated
+                and getattr(request.user, "location_sharing_enabled", False)
+            ),
+            "is_logged_in": request.user.is_authenticated,
         },
     )
 
@@ -350,7 +481,18 @@ def profile_edit(request):
     if request.method == "POST":
         form = ProfileForm(request.POST, instance=request.user)
         if form.is_valid():
-            form.save()
+            previously_enabled = request.user.location_sharing_enabled
+            user = form.save(commit=False)
+
+            if user.location_sharing_enabled and not previously_enabled:
+                # the user intentionally turned location sharing back on
+                user.location_permission_asked = False
+            elif not user.location_sharing_enabled:
+                # the user turned off location sharing
+                user.location_permission_asked = False
+
+            user.save()
+
             messages.success(request, "Your profile was updated.")
             return redirect("profile")
     else:
@@ -440,6 +582,7 @@ def signup(request):
     else:
         form = SignUpForm()
     return render(request, "registration/signup.html", {"form": form})
+
 
 @require_GET
 def service_worker(request):

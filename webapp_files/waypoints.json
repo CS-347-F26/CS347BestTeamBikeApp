@@ -2530,7 +2530,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Central to Student Success Center",
+      "type": "Central",
       "properties": {},
       "color": "Indigo",
       "geometry": {
@@ -3036,7 +3036,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Central to Ralph Samson Park",
+      "type": "Central Ralph Samson Park Subroute",
       "properties": {},
       "color": "Indigo",
       "geometry": {
@@ -3092,7 +3092,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Central to Waterman Elementary",
+      "type": "Central Waterman Elementary Subroute",
       "properties": {},
       "color": "Indigo",
       "geometry": {
@@ -3138,7 +3138,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Central to Dogwood & Wolfe",
+      "type": "Central Dogwood & Wolfe Subroute",
       "properties": {},
       "color": "Indigo",
       "geometry": {
@@ -3194,7 +3194,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Central JMU Campus Loop",
+      "type": "Central JMU Campus Loop Subroute",
       "properties": {},
       "color": "Indigo",
       "geometry": {
@@ -3735,7 +3735,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Purcell Park to Stone Spring",
+      "type": "Central Purcell Park to Stone Spring Subroute",
       "properties": {},
       "color": "Indigo",
       "geometry": {
@@ -4051,7 +4051,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Purcell Park to Bluestone Bike & Run",
+      "type": "Central Purcell Park to Bluestone Bike & Run Subroute",
       "properties": {},
       "color": "Indigo",
       "geometry": {
@@ -4177,7 +4177,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Arboretum-East Campus Loop",
+      "type": "Arboretum",
       "properties": {},
       "color": "Blue",
       "geometry": {
@@ -4662,7 +4662,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Arboretum Gate to Peachgrove",
+      "type": "Arboretum Gate to Peachgrove Subroute",
       "properties": {},
       "color": "Blue",
       "geometry": {
@@ -5028,7 +5028,7 @@
     "type": "PredefinedRoute",
     "features": [
     {
-      "type": "Arboretum & Neff to Walmart",
+      "type": "Arboretum Neff to Walmart Subroute",
       "properties": {},
       "color": "Blue",
       "geometry": {
@@ -5583,6 +5583,6 @@
       }
     }
   ]
-},
+}
 
 ]

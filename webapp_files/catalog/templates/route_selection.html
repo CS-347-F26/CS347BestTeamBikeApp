@@ -11,6 +11,9 @@
 {% block content %}
   <header class="page-title-band">
     <h1>Routes</h1>
+    {% if user.is_authenticated %}
+      <p><a class="route-import-link" href="{% url 'route-import' %}">+ Import a route</a></p>
+    {% endif %}
   </header>
 
   {# Search + comfort filter (claim I20). A plain GET form, so the view #}

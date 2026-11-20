@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Staunton Downtown Loop",
+        "color": "blue"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-79.07170, 38.14960],
+          [-79.07010, 38.14880],
+          [-79.06800, 38.14790],
+          [-79.06620, 38.14700],
+          [-79.06750, 38.14560],
+          [-79.06980, 38.14650]
+        ]
+      }
+    }
+  ]
+}

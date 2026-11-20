@@ -27,7 +27,14 @@ urlpatterns = [
 # Routes (the color-coded bike lines): list and detail
 urlpatterns += [
     path("routes/", views.RouteListView.as_view(), name="route-list"),
+    # Upload a GeoJSON file to add user-made routes (login required)
+    path("routes/import/", views.route_import, name="route-import"),
     path("routes/<int:pk>/", views.RouteDetailView.as_view(), name="route-detail"),
+    # Download one route as a GeoJSON file
+    path("routes/<int:pk>/export/", views.route_export, name="route-export"),
+    # The uploader's own imported routes: replace with a new file, or delete
+    path("routes/<int:pk>/edit/", views.route_edit, name="route-edit"),
+    path("routes/<int:pk>/delete/", views.route_delete, name="route-delete"),
 ]
 
 # Feedback on a route, nested under that route.
@@ -69,6 +76,7 @@ urlpatterns += [
 urlpatterns += [
     path("map/", views.map_view, name="map"),
     path("trips/new/", views.trip_new, name="trip-new"),
+    path("help/", views.help_page, name="help"),
 ]
 
 # The logged-in rider's profile

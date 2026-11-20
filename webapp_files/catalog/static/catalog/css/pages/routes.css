@@ -334,3 +334,9 @@
     width: 17rem;  /* same as the line, so Clear stays next to the circles */
   }
 }
+
+/* "+ Import a route" link under the title (logged-in riders only). */
+.route-import-link {
+  color: var(--color-primary);
+  font-weight: 700;
+}
