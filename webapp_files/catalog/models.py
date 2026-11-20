@@ -26,6 +26,9 @@ class User(AbstractUser):
         "Location", blank=True, related_name="marked_by"
     )
 
+    location_sharing_enabled = models.BooleanField(default=False)
+    location_permission_asked = models.BooleanField(default=False)
+
     def __str__(self):
         """String for representing the User object (in Admin site etc.)."""
         return self.username

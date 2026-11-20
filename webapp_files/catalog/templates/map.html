@@ -55,10 +55,14 @@
   </section>
 
   {{ map_data|json_script:"map-data" }}
+  {{ location_sharing_enabled|json_script:"location-sharing-enabled" }}
+  {{ is_logged_in|json_script:"is-logged-in" }}
   <script type="module">
     import * as maplibregl from "https://unpkg.com/maplibre-gl@6.17.0/dist/maplibre-gl.mjs";
 
     const mapData = JSON.parse(document.getElementById("map-data").textContent);
+    const locationSharingEnabled = JSON.parse(document.getElementById("location-sharing-enabled").textContent);
+    const isLoggedIn = JSON.parse(document.getElementById("is-logged-in").textContent);
     const mapError = document.getElementById("map-error");
     const map = new maplibregl.Map({
       container: "bike-map",
@@ -87,6 +91,17 @@
       point[1] <= 90;
 
     map.addControl(new maplibregl.NavigationControl(), "top-left");
+
+    const geolocate = new maplibregl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true,
+      },
+      trackUserLocation: true,
+      showUserHeading: true,
+    });
+
+    map.addControl(geolocate, "top-right");
+
     map.on("error", () => {
       mapError.hidden = false;
     });
@@ -161,6 +176,24 @@
           "circle-stroke-width": 1.5,
         },
       });
+
+      if (!navigator.geolocation) { // check if the browser supports geolocation
+        mapError.textContent =
+          "Your browser does not support location sharing.";
+        mapError.hidden = false;
+      } else if (isLoggedIn) { // the user is logged in
+        if (locationSharingEnabled) {
+          geolocate.trigger();
+        }
+      } else {
+        const permissionKey = "bikeapp.locationPermissionAsked"; // key used to store whether the user has been asked for location permission
+
+        if (localStorage.getItem(permissionKey) !== "asked") { // check if the user has been asked for location permission before
+          localStorage.setItem(permissionKey, "asked"); // mark that the user has been asked for location permission
+          geolocate.trigger(); // trigger the geolocation control for the first time
+        }
+      }
+
       map.on("click", "named-waypoints", (event) => {
         const feature = event.features[0];
         new maplibregl.Popup()

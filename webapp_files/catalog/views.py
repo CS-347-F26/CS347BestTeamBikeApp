@@ -304,7 +304,12 @@ def map_view(request):
                 "locations": locations,
                 "routes": routes,
                 "named_waypoints": named_waypoints,
-            }
+            },
+            "location_sharing_enabled": (
+                request.user.is_authenticated
+                and getattr(request.user, "location_sharing_enabled", False)
+            ),
+            "is_logged_in": request.user.is_authenticated,
         },
     )
 
@@ -355,7 +360,18 @@ def profile_edit(request):
     if request.method == "POST":
         form = ProfileForm(request.POST, instance=request.user)
         if form.is_valid():
-            form.save()
+            previously_enabled = request.user.location_sharing_enabled
+            user = form.save(commit=False)
+
+            if user.location_sharing_enabled and not previously_enabled:
+                # the user intentionally turned location sharing back on
+                user.location_permission_asked = False
+            elif not user.location_sharing_enabled:
+                # the user turned off location sharing
+                user.location_permission_asked = False
+
+            user.save()
+
             messages.success(request, "Your profile was updated.")
             return redirect("profile")
     else:

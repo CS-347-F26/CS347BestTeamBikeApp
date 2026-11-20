@@ -18,12 +18,16 @@ class SignUpForm(UserCreationForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ["username", "comfortability"]
+        fields = ["username", "comfortability", "location_sharing_enabled"]
         widgets = {
             "username": forms.TextInput(attrs={"class": "form-control"}),
             "comfortability": forms.NumberInput(
                 attrs={"class": "form-control", "min": 0, "max": 5}
             ),
+        }
+        labels = {
+            "location_sharing_enabled":
+                "Show my location on the map",
         }
 
 
