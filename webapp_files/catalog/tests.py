@@ -719,7 +719,7 @@ class LandmarkTests(TestCase):
         self.assertContains(response, "Share route feedback")
         self.assertContains(response, "Start a route")
         self.assertContains(response, "Import, export, and manage routes")
-        self.assertContains(response, "Download as GeoJSON")
+        self.assertContains(response, "Download as JSON")
         self.assertContains(response, "basic GPS guidance")
         self.assertContains(response, f'href="{reverse("help")}">Help</a>')
 
