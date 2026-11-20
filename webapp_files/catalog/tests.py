@@ -299,8 +299,8 @@ class MapViewTests(TestCase):
         self.assertEqual(
             west_side.route_waypoints.first().waypoint.name, "Willow Run Rd"
         )
-        central_route = routes.get(name="Central to Student Success Center")
-        ralph_subroute = routes.get(name="Central to Ralph Samson Park")
+        central_route = routes.get(name="Central")
+        ralph_subroute = routes.get(name="Central Ralph Samson Park Subroute")
         self.assertEqual(ralph_subroute.parent_route, central_route)
 
 
