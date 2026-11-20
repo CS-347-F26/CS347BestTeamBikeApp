@@ -224,8 +224,10 @@ class MapViewTests(TestCase):
         self.assertEqual(
             next(route for route in map_data["routes"] if route["name"] == "Red Line"),
             {
+                "id": route.pk,
                 "name": "Red Line",
                 "color": "red",
+                "comfortability": 0,
                 "route_type": "main",
                 "is_official": False,
                 "parent_route": None,
@@ -234,6 +236,7 @@ class MapViewTests(TestCase):
                     [-78.870, 38.443],
                     [-78.871, 38.438],
                 ],
+                "waypoint_ids": [first.pk, middle.pk, last.pk],
             },
         )
         west_side = next(
