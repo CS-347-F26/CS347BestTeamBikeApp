@@ -1,7 +1,11 @@
+import json
+
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
 from .models import RouteFeedback, User
+from .route_import import SUPPORTED_COLORS, RouteImportError, parse_route_file
 
 
 class SignUpForm(UserCreationForm):
@@ -99,3 +103,69 @@ class RouteFeedbackForm(forms.ModelForm):
                 }
             ),
         }
+
+
+class RouteImportForm(forms.Form):
+    """Upload a route drawn in geojson.io (or in the team's waypoints.json
+    format). clean() parses the file; the view saves what it finds in
+    cleaned_data["parsed"] (a route_import.ParseResult)."""
+
+    MAX_BYTES = 1_000_000  # 1 MB is far more than a hand-drawn route needs
+
+    file = forms.FileField(
+        label="Route file",
+        help_text="A .geojson or .json file, e.g. from geojson.io (Save → GeoJSON).",
+        widget=forms.ClearableFileInput(
+            attrs={
+                "accept": ".geojson,.json,application/geo+json,application/json",
+                "class": "form-control",
+            }
+        ),
+    )
+    name = forms.CharField(
+        label="Route name",
+        required=False,
+        max_length=100,
+        help_text="Used when the file doesn't name the route.",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    color = forms.ChoiceField(
+        label="Color",
+        required=False,
+        choices=[("", "Use the file's color")]
+        + [(color, color.title()) for color in SUPPORTED_COLORS],
+        help_text="Used when the file doesn't give a color the app knows.",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+
+    def clean_file(self):
+        """Check the size and turn the upload into JSON data."""
+        upload = self.cleaned_data["file"]
+        if upload.size > self.MAX_BYTES:
+            raise forms.ValidationError("That file is too big (the limit is 1 MB).")
+        try:
+            # utf-8-sig also accepts files saved with a byte-order mark.
+            return json.loads(upload.read().decode("utf-8-sig"))
+        except (UnicodeDecodeError, ValueError):
+            raise forms.ValidationError(
+                "That file isn't valid JSON. Export it from geojson.io with "
+                "Save → GeoJSON."
+            )
+
+    def clean(self):
+        """Parse the routes once all fields are in, since the name and color
+        fields fill in what the file leaves out."""
+        cleaned = super().clean()
+        if "file" in cleaned:  # only when clean_file succeeded
+            try:
+                cleaned["parsed"] = parse_route_file(
+                    cleaned["file"],
+                    default_name=cleaned.get("name", ""),
+                    default_color=cleaned.get("color", ""),
+                    # Only routes inside this city's area (see settings.py).
+                    bounds=settings.ROUTE_AREA_BOUNDS,
+                    area_name=settings.ROUTE_AREA_NAME,
+                )
+            except RouteImportError as error:
+                self.add_error("file", str(error))
+        return cleaned

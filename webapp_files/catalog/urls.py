@@ -27,6 +27,8 @@ urlpatterns = [
 # Routes (the color-coded bike lines): list and detail
 urlpatterns += [
     path("routes/", views.RouteListView.as_view(), name="route-list"),
+    # Upload a GeoJSON file to add user-made routes (login required)
+    path("routes/import/", views.route_import, name="route-import"),
     path("routes/<int:pk>/", views.RouteDetailView.as_view(), name="route-detail"),
 ]
 

@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Court Square to JMU",
+        "color": "purple"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-78.86890, 38.44960],
+          [-78.86915, 38.44800],
+          [-78.86945, 38.44650],
+          [-78.86985, 38.44480],
+          [-78.87030, 38.44300],
+          [-78.87080, 38.44120],
+          [-78.87130, 38.43960],
+          [-78.87190, 38.43860]
+        ]
+      }
+    }
+  ]
+}

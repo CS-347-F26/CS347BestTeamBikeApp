@@ -1,6 +1,7 @@
 import logging
 from math import isfinite
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.db import DatabaseError, connection
@@ -15,7 +16,14 @@ from django.http import HttpResponse
 from pathlib import Path
 
 from .models import User, Route, RouteWaypoint, Location, RouteFeedback
-from .forms import ProfileForm, RouteFeedbackForm, RouteSearchForm, SignUpForm
+from .forms import (
+    ProfileForm,
+    RouteFeedbackForm,
+    RouteImportForm,
+    RouteSearchForm,
+    SignUpForm,
+)
+from .route_import import save_routes
 
 route_logger = logging.getLogger("catalog.routes")
 health_logger = logging.getLogger("catalog.health")
@@ -142,6 +150,41 @@ class RouteDetailView(generic.DetailView):
         context = super().get_context_data(**kwargs)
         _log_route_loaded(self.request, self.object, "detail")
         return context
+
+
+@login_required
+def route_import(request):
+    """Upload a GeoJSON file to add user-made routes: /routes/import/
+
+    GET shows the form; POST parses the file (in RouteImportForm.clean) and
+    saves every line in it as a route owned by the rider."""
+    if request.method == "POST":
+        form = RouteImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            result = form.cleaned_data["parsed"]
+            routes = save_routes(result.routes, request.user)
+            names = ", ".join(route.name for route in routes)
+            message = (
+                f"Imported {len(routes)} route{'s' if len(routes) != 1 else ''}: "
+                f"{names}."
+            )
+            if result.skipped:
+                message += (
+                    f" Skipped {result.skipped} feature"
+                    f"{'s' if result.skipped != 1 else ''} that "
+                    f"{'aren’t lines' if result.skipped != 1 else 'isn’t a line'}."
+                )
+            messages.success(request, message)
+            if len(routes) == 1:
+                return redirect(routes[0])
+            return redirect("route-list")
+    else:
+        form = RouteImportForm()
+    return render(
+        request,
+        "route_import.html",
+        {"form": form, "area_name": settings.ROUTE_AREA_NAME},
+    )
 
 
 # --- Route feedback -------------------------------------------------------

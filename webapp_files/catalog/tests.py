@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.db import IntegrityError
 from django.db.utils import DatabaseError
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import (
@@ -18,6 +18,8 @@ from .models import (
     Waypoint,
 )
 from .log_formatters import JSONFormatter
+from .route_import import RouteImportError, parse_route_file
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 class NotFoundPageTests(TestCase):
@@ -66,6 +68,7 @@ class UrlRoutingTests(TestCase):
             ("index", ()): "/home/",
             ("help", ()): "/help/",
             ("route-list", ()): "/routes/",
+            ("route-import", ()): "/routes/import/",
             ("route-detail", (r,)): f"/routes/{r}/",
             ("feedback-route-selection", ()): "/feedback/",
             ("feedback-form", (r,)): f"/routes/{r}/feedback/",
@@ -1250,3 +1253,252 @@ class RouteMetadataTests(TestCase):
 
         with self.assertRaises(ValidationError):
             nested_subroute.full_clean()
+
+
+class RouteImportTests(TestCase):
+    """Riders upload a GeoJSON file (geojson.io or the team's waypoints.json
+    format) at /routes/import/ to add user-made routes."""
+
+    # A line like geojson.io saves it (Save -> GeoJSON), plus a point to skip.
+    GEOJSON_IO = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"name": "Campus Loop", "color": "Blue"},
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [-78.8690, 38.4490],
+                        [-78.8700, 38.4500],
+                        [-78.8710, 38.4510],
+                    ],
+                },
+            },
+            {
+                "type": "Feature",
+                "properties": {},
+                "geometry": {"type": "Point", "coordinates": [-78.87, 38.45]},
+            },
+        ],
+    }
+
+    # The team's format, as in waypoints.json.
+    TEAM_FORMAT = [
+        {
+            "type": "PredefinedRoute",
+            "features": [
+                {
+                    "name": "Test Main",
+                    "properties": {},
+                    "color": "Green",
+                    "geometry": {
+                        "type": "MainRoute",
+                        "coordinates": [
+                            [-78.80, 38.40, "Start Point"],
+                            [-78.81, 38.41, ""],
+                        ],
+                    },
+                }
+            ],
+        },
+        {
+            "type": "PredefinedRoute",
+            "features": [
+                {
+                    "type": "Test Main Spur Subroute",
+                    "properties": {},
+                    "color": "Green",
+                    "geometry": {
+                        "type": "SubRoute",
+                        "coordinates": [[-78.81, 38.41, ""], [-78.82, 38.42, "End"]],
+                    },
+                }
+            ],
+        },
+    ]
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            username="importer", password="test-pass-123"
+        )
+
+    def setUp(self):
+        self.client.login(username="importer", password="test-pass-123")
+        # Only look at routes these tests make (migrations load official ones).
+        self.before = set(Route.objects.values_list("pk", flat=True))
+
+    def upload(self, data, follow=False, **fields):
+        raw = data if isinstance(data, bytes) else json.dumps(data).encode()
+        upload = SimpleUploadedFile("route.geojson", raw, "application/geo+json")
+        return self.client.post(
+            reverse("route-import"), {"file": upload, **fields}, follow=follow
+        )
+
+    def new_routes(self):
+        return Route.objects.exclude(pk__in=self.before)
+
+    # --- parser ----------------------------------------------------------
+
+    def test_parse_multilinestring_is_joined(self):
+        result = parse_route_file(
+            {
+                "type": "Feature",
+                "properties": {"name": "Two Parts"},
+                "geometry": {
+                    "type": "MultiLineString",
+                    "coordinates": [[[-78.1, 38.1], [-78.2, 38.2]], [[-78.3, 38.3]]],
+                },
+            },
+            default_color="red",
+        )
+        self.assertEqual(len(result.routes[0].points), 3)
+        self.assertEqual(result.routes[0].color, "red")
+
+    def test_parse_elevation_is_not_a_name(self):
+        result = parse_route_file(
+            {
+                "type": "LineString",
+                "coordinates": [[-78.1, 38.1, 400], [-78.2, 38.2, 410]],
+            },
+            default_color="red",
+        )
+        self.assertEqual(result.routes[0].points[0], (-78.1, 38.1, ""))
+        self.assertEqual(result.routes[0].name, "Imported route")
+
+    def test_parse_errors(self):
+        def line(coordinates, color="red"):
+            return {
+                "type": "Feature",
+                "properties": {"color": color},
+                "geometry": {"type": "LineString", "coordinates": coordinates},
+            }
+
+        bad = {
+            "one point": line([[-78.1, 38.1]]),
+            "off the map": line([[-78.1, 38.1], [-200, 38.2]]),
+            "text coordinate": line([[-78.1, 38.1], ["x", 38.2]]),
+            "unknown color": line([[-78.1, 38.1], [-78.2, 38.2]], color="teal"),
+            "no color": line([[-78.1, 38.1], [-78.2, 38.2]], color=""),
+            "no lines": {"type": "FeatureCollection", "features": []},
+            "not geojson": {"hello": "world"},
+        }
+        for label, data in bad.items():
+            with self.subTest(label), self.assertRaises(RouteImportError):
+                parse_route_file(data)
+
+    # --- view ------------------------------------------------------------
+
+    def test_login_required(self):
+        self.client.logout()
+        response = self.client.get(reverse("route-import"))
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={reverse('route-import')}",
+            fetch_redirect_response=False,
+        )
+
+    def test_form_page_loads(self):
+        response = self.client.get(reverse("route-import"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'enctype="multipart/form-data"')
+
+    def test_import_geojson_io_file(self):
+        response = self.upload(self.GEOJSON_IO, follow=True)
+        route = self.new_routes().get()
+        self.assertRedirects(response, route.get_absolute_url())
+        self.assertContains(response, "Added by importer")
+        self.assertContains(response, "Skipped 1 feature")
+        self.assertEqual(route.name, "Campus Loop")
+        self.assertEqual(route.color, "blue")
+        self.assertFalse(route.is_official)
+        self.assertEqual(route.created_by, self.user)
+        self.assertEqual(route.route_type, Route.Type.MAIN)
+        self.assertEqual(
+            [(rw.order, rw.waypoint.longitude) for rw in route.route_waypoints.all()],
+            [(0, -78.8690), (1, -78.8700), (2, -78.8710)],
+        )
+
+    def test_form_name_and_color_fill_gaps(self):
+        data = {
+            "type": "LineString",
+            "coordinates": [[-78.869, 38.449], [-78.871, 38.439]],
+        }
+        self.upload(data, name="My Commute", color="purple")
+        route = self.new_routes().get()
+        self.assertEqual((route.name, route.color), ("My Commute", "purple"))
+
+    def test_import_team_format_links_subroute(self):
+        response = self.upload(self.TEAM_FORMAT)
+        self.assertRedirects(response, reverse("route-list"))
+        main = self.new_routes().get(name="Test Main")
+        sub = self.new_routes().get(name="Test Main Spur Subroute")
+        self.assertEqual(sub.route_type, Route.Type.SUBROUTE)
+        self.assertEqual(sub.parent_route, main)
+        self.assertEqual(main.route_waypoints.first().waypoint.name, "Start Point")
+        # The shared point is one waypoint on both routes.
+        self.assertEqual(
+            main.route_waypoints.last().waypoint,
+            sub.route_waypoints.first().waypoint,
+        )
+
+    def test_waypoints_json_imports(self):
+        """The team's real waypoints.json is a valid upload."""
+        raw = (Path(__file__).resolve().parents[1] / "waypoints.json").read_bytes()
+        response = self.upload(raw)
+        self.assertRedirects(response, reverse("route-list"))
+        self.assertGreater(self.new_routes().count(), 5)
+
+    def test_parse_checks_area_bounds(self):
+        data = {"type": "LineString", "coordinates": [[-78.1, 38.1], [-78.2, 38.2]]}
+        # No bounds: anywhere on Earth is fine.
+        parse_route_file(data, default_color="red")
+        with self.assertRaisesMessage(RouteImportError, "goes outside Testville"):
+            parse_route_file(
+                data,
+                default_color="red",
+                bounds=(-79.0, 38.0, -78.15, 38.5),
+                area_name="Testville",
+            )
+
+    def test_route_outside_harrisonburg_is_rejected(self):
+        # Ends in Richmond, VA.
+        data = {
+            "type": "Feature",
+            "properties": {"name": "Road Trip", "color": "red"},
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[-78.869, 38.449], [-77.436, 37.541]],
+            },
+        }
+        response = self.upload(data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "goes outside the Harrisonburg area")
+        self.assertFalse(self.new_routes().exists())
+
+    @override_settings(
+        ROUTE_AREA_NAME="Richmond", ROUTE_AREA_BOUNDS=(-77.6, 37.4, -77.3, 37.7)
+    )
+    def test_area_comes_from_settings(self):
+        """Another city only changes settings, not code."""
+        data = {
+            "type": "Feature",
+            "properties": {"name": "Downtown RVA", "color": "red"},
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[-77.436, 37.541], [-77.440, 37.545]],
+            },
+        }
+        self.upload(data)
+        self.assertTrue(self.new_routes().filter(name="Downtown RVA").exists())
+        self.assertContains(self.client.get(reverse("route-import")), "within Richmond")
+
+    def test_bad_file_shows_error_and_saves_nothing(self):
+        empty = json.dumps({"type": "FeatureCollection", "features": []}).encode()
+        for raw in (b"{not json", empty):
+            with self.subTest(raw=raw):
+                response = self.upload(raw)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "auth-field-error")
+                self.assertFalse(self.new_routes().exists())

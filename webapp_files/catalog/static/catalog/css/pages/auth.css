@@ -91,6 +91,16 @@ main {
   border-color: var(--color-danger);
 }
 
+/* File pickers and dropdowns (route import page): same white fill and
+   border as the text boxes, keeping Bootstrap's own sizing. */
+.auth-card :is(input[type="file"], select) {
+  border: 1.5px solid var(--color-secondary);
+  border-radius: 0.625rem;
+  background-color: #fff;
+  color: var(--color-primary);
+  font-size: 1rem;
+}
+
 /* Password field with the Show/Hide button inside its right end. */
 .password-wrap {
   position: relative;

@@ -49,6 +49,16 @@ ALLOWED_HOSTS = env.list(
     default=env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"]),
 )
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+# The area riders can import routes in (routes/import/). Every point of an
+# uploaded route must fall inside this box: west, south, east, north in
+# degrees (longitude, latitude, longitude, latitude). The default covers
+# Harrisonburg, VA plus a few km around it; another city sets its own box
+# and name in .env, e.g. ROUTE_AREA_BOUNDS=-79.1,38.0,-78.9,38.2
+ROUTE_AREA_NAME = env("ROUTE_AREA_NAME", default="the Harrisonburg area")
+ROUTE_AREA_BOUNDS = tuple(
+    env.list("ROUTE_AREA_BOUNDS", cast=float, default=[-78.95, 38.38, -78.80, 38.51])
+)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 

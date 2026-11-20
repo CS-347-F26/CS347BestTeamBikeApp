@@ -66,6 +66,14 @@ class Route(models.Model):
     name = models.CharField(max_length=100)
     color = models.CharField(max_length=30)
     is_official = models.BooleanField(default=True)
+    # The rider who imported a user-made route; blank for official routes.
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="created_routes",
+        blank=True,
+        null=True,
+    )
     route_type = models.CharField(
         max_length=10, choices=Type.choices, default=Type.MAIN
     )
