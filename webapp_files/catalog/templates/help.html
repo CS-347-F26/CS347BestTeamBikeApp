@@ -1,0 +1,76 @@
+{% extends "base_generic.html" %}
+
+{% block title %}Help and Getting Started{% endblock %}
+
+{% block content %}
+  <article class="container py-4">
+    <header class="mb-4">
+      <h1>Help and Getting Started</h1>
+      <p>Learn how to explore Bike Transit and find a route that works for you.</p>
+    </header>
+
+    <nav aria-label="Help topics" class="mb-4">
+      <ul>
+        <li><a href="#map">Explore the map</a></li>
+        <li><a href="#routes">Find and compare routes</a></li>
+        <li><a href="#feedback">Share route feedback</a></li>
+        <li><a href="#account">Accounts and installation</a></li>
+      </ul>
+    </nav>
+
+    <section id="map" class="mb-4">
+      <h2>Explore the map</h2>
+      <p>
+        Open the <a href="{% url 'map' %}">map</a> to see routes and locations.
+        Solid lines are main routes; dashed lines are subroutes. Use the map
+        controls or touch gestures to zoom and pan. Select a named waypoint
+        marker to see its name.
+      </p>
+    </section>
+
+    <section id="routes" class="mb-4">
+      <h2>Find and compare routes</h2>
+      <ol>
+        <li>Open <a href="{% url 'route-list' %}">Routes</a> and enter a search term.</li>
+        <li>
+          Choose whether the term should match route names, colors, or both.
+          If neither field is selected, both are searched.
+        </li>
+        <li>
+          Optionally select Official to show official routes only, or choose a
+          comfort rating from 1 to 5 to show routes rated at least that high.
+          Select the chosen rating again to clear it.
+        </li>
+        <li>Select Search to apply your choices, or Clear to show all routes again.</li>
+      </ol>
+      <p>
+        Select a route's Comments link to view its details and waypoints. The
+        detail page also links to the route feedback form.
+      </p>
+    </section>
+
+    <section id="feedback" class="mb-4">
+      <h2>Share route feedback</h2>
+      <p>
+        Open <a href="{% url 'feedback-route-selection' %}">Feedback</a>, choose
+        a route, and submit your comfort rating and optional comments. You need
+        to <a href="{% url 'login' %}">sign in</a> to submit feedback; create an
+        account first if you don't have one.
+      </p>
+    </section>
+
+    <section id="account">
+      <h2>Accounts and installation</h2>
+      <p>
+        Your profile shows your feedback and any saved routes, previous rides,
+        or marked locations associated with your account. Use Edit profile or
+        Change password from the profile page to manage your account.
+      </p>
+      <p>
+        To install BikeWay on a compatible device, use Install BikeWay on the
+        welcome page. On iPhone or iPad, open the site in Safari, choose Share,
+        then Add to Home Screen.
+      </p>
+    </section>
+  </article>
+{% endblock %}

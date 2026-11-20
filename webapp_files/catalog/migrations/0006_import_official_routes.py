@@ -52,14 +52,17 @@ def import_official_routes(apps, schema_editor):
             raise ValueError(f"Unknown predefined route type: {route_type}")
 
         route_name = feature.get("name") or feature.get("type")
-        parent_names = [
-            name for name in main_routes if route_name.startswith(f"{name} ")
+        parent_routes = [
+            route
+            for route in main_routes.values()
+            if route.color.lower() == feature["color"].lower()
         ]
-        if len(parent_names) != 1:
+        if len(parent_routes) != 1:
             raise ValueError(
-                f"Could not identify one main route for subroute {route_name!r}"
+                f"Could not identify one main route by color for subroute "
+                f"{route_name!r}"
             )
-        parent_route = main_routes[parent_names[0]]
+        parent_route = parent_routes[0]
         route, created = Route.objects.using(database).get_or_create(
             name=route_name,
             is_official=True,

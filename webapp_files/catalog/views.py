@@ -58,6 +58,11 @@ def index(request):
     return render(request, "index.html", context=context)
 
 
+def help_page(request):
+    """Show in-app guidance for exploring Bike Transit."""
+    return render(request, "help.html")
+
+
 # --- Routes ---------------------------------------------------------------
 # Generic class-based views: ListView/DetailView do the query for us, and
 # DetailView returns a 404 automatically when no route has that pk.
@@ -440,6 +445,7 @@ def signup(request):
     else:
         form = SignUpForm()
     return render(request, "registration/signup.html", {"form": form})
+
 
 @require_GET
 def service_worker(request):

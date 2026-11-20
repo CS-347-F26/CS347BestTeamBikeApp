@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from unittest.mock import patch
 
 from django.db import IntegrityError
@@ -63,6 +64,7 @@ class UrlRoutingTests(TestCase):
         expected = {
             ("landing", ()): "/",
             ("index", ()): "/home/",
+            ("help", ()): "/help/",
             ("route-list", ()): "/routes/",
             ("route-detail", (r,)): f"/routes/{r}/",
             ("feedback-route-selection", ()): "/feedback/",
@@ -101,6 +103,7 @@ class UrlRoutingTests(TestCase):
         pages = [
             ("landing", ()),
             ("index", ()),
+            ("help", ()),
             ("route-list", ()),
             ("route-detail", (r,)),
             ("feedback-route-selection", ()),
@@ -275,8 +278,18 @@ class MapViewTests(TestCase):
 
     def test_official_routes_and_subroute_parents_are_seeded(self):
         routes = Route.objects.filter(is_official=True)
-
-        self.assertEqual(routes.count(), 10)
+        data_path = Path(__file__).resolve().parents[1] / "waypoints.json"
+        with data_path.open(encoding="utf-8") as data_file:
+            groups = json.load(data_file)
+        expected_names = {
+            feature.get("name") or feature.get("type")
+            for group in groups
+            for feature in group.get("features", [])
+        }
+        self.assertSetEqual(
+            set(routes.values_list("name", flat=True)),
+            expected_names,
+        )
         west_side = routes.get(name="West Side")
         emu_subroute = routes.get(name="West Side Emu Subroute")
         self.assertEqual(west_side.route_type, Route.Type.MAIN)
@@ -286,6 +299,9 @@ class MapViewTests(TestCase):
         self.assertEqual(
             west_side.route_waypoints.first().waypoint.name, "Willow Run Rd"
         )
+        central_route = routes.get(name="Central to Student Success Center")
+        ralph_subroute = routes.get(name="Central to Ralph Samson Park")
+        self.assertEqual(ralph_subroute.parent_route, central_route)
 
 
 class SignUpTests(TestCase):
@@ -675,11 +691,19 @@ class AuthEnforcedTests(TestCase):
 
 class LandmarkTests(TestCase):
     def test_pages_have_nav_and_main(self):
-        for name in ("index", "route-list", "location-list", "map", "login"):
+        for name in ("index", "help", "route-list", "location-list", "map", "login"):
             with self.subTest(name=name):
                 response = self.client.get(reverse(name))
                 self.assertContains(response, "<nav")
                 self.assertContains(response, "<main")
+
+    def test_help_page_has_guidance_and_navigation_link(self):
+        response = self.client.get(reverse("help"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Explore the map")
+        self.assertContains(response, "Find and compare routes")
+        self.assertContains(response, "Share route feedback")
+        self.assertContains(response, f'href="{reverse("help")}">Help</a>')
 
     def test_nav_marks_current_section(self):
         """The hamburger link for the page's section is the active pill. Pages
@@ -691,6 +715,7 @@ class LandmarkTests(TestCase):
             "map": ("Map", 2),
             "route-list": ("Routes", 2),
             "trip-new": ("Plan a trip", 1),
+            "help": ("Help", 1),
         }
         for name, (label, count) in cases.items():
             with self.subTest(name=name):

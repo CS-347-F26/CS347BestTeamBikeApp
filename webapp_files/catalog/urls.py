@@ -69,6 +69,7 @@ urlpatterns += [
 urlpatterns += [
     path("map/", views.map_view, name="map"),
     path("trips/new/", views.trip_new, name="trip-new"),
+    path("help/", views.help_page, name="help"),
 ]
 
 # The logged-in rider's profile
